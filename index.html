@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TVS Animator - 2D Frame Animation</title>
-    <!-- JSZip for PNG sequence & gif.js for GIF export -->
+    <!-- JSZip for PNG sequence -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- gif.js library -->
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <style>
         * {
@@ -215,13 +216,27 @@
             left: 0;
             z-index: 10;
         }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 <div class="app-container">
     <h1>🎬 TVS Animator <small>2D Frame Studio</small></h1>
 
-    <!-- Top Tools -->
     <div class="toolbar">
         <div class="tool-group">
             <button id="pencilBtn" class="tool-btn active">✏️ Pencil</button>
@@ -245,7 +260,6 @@
         </div>
     </div>
 
-    <!-- Animation & frame controls -->
     <div class="frame-bar">
         <div class="tool-group">
             <button id="prevFrameBtn">◀ Prev</button>
@@ -270,13 +284,11 @@
         </div>
     </div>
 
-    <!-- Drawing Canvas + Brush Preview Overlay -->
     <div class="canvas-area" style="position: relative; display: inline-block; width:100%; text-align:center;">
         <canvas id="mainCanvas" width="720" height="480" style="width:100%; max-width:720px; aspect-ratio:720/480; border-radius:16px;"></canvas>
         <canvas id="brushPreviewCanvas" width="720" height="480" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width:100%; max-width:720px; aspect-ratio:720/480; pointer-events: none; border-radius:16px;"></canvas>
     </div>
 
-    <!-- Frames strip -->
     <div style="margin-top: 12px;">
         <div style="margin-bottom: 8px;">🎞️ FRAMES (click to select)</div>
         <div id="framesStrip" class="frames-strip"></div>
@@ -286,6 +298,7 @@
         <span class="status">✨ TVS Studio - 2D Animation</span>
     </div>
 </div>
+<div id="toastMsg" class="toast">GIF rendering...</div>
 
 <script>
     // ---------- CONFIG ----------
@@ -294,20 +307,18 @@
     const ctx = mainCanvas.getContext('2d');
     const previewCanvas = document.getElementById('brushPreviewCanvas');
     const previewCtx = previewCanvas.getContext('2d');
+    const toast = document.getElementById('toastMsg');
     
-    // Data model
-    let frames = [];            // Array of HTMLCanvasElement (each frame)
+    let frames = [];
     let currentFrameIndex = 0;
     let playing = false;
     let playInterval = null;
     
-    // Tools
     let currentTool = "pencil";
     let currentColor = "#000000";
     let brushSize = 6;
     let onionEnabled = false;
     
-    // Drawing state
     let drawing = false;
     let lastX = 0, lastY = 0;
     
@@ -336,7 +347,13 @@
     const fpsValueSpan = document.getElementById('fpsValue');
     const framesStripDiv = document.getElementById('framesStrip');
     
-    // ---------- Helper: blank white canvas ----------
+    function showToast(msg, isError = false) {
+        toast.style.backgroundColor = isError ? '#c44' : '#2a6f2a';
+        toast.innerText = msg;
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+    }
+    
     function createBlankCanvas() {
         const canvas = document.createElement('canvas');
         canvas.width = W;
@@ -347,7 +364,6 @@
         return canvas;
     }
     
-    // Initialize project with one frame
     function initProject() {
         frames = [];
         frames.push(createBlankCanvas());
@@ -358,27 +374,20 @@
         updateFrameCounter();
     }
     
-    // Render main canvas + onion skin
     function renderCurrentFrame() {
         if (!frames.length) return;
         const currentCanvas = frames[currentFrameIndex];
         ctx.clearRect(0, 0, W, H);
         ctx.drawImage(currentCanvas, 0, 0);
-        
         if (onionEnabled) {
             ctx.save();
             ctx.globalAlpha = 0.35;
-            if (currentFrameIndex > 0) {
-                ctx.drawImage(frames[currentFrameIndex - 1], 0, 0);
-            }
-            if (currentFrameIndex === 0 && frames.length > 1) {
-                ctx.drawImage(frames[1], 0, 0);
-            }
+            if (currentFrameIndex > 0) ctx.drawImage(frames[currentFrameIndex - 1], 0, 0);
+            if (currentFrameIndex === 0 && frames.length > 1) ctx.drawImage(frames[1], 0, 0);
             ctx.restore();
         }
     }
     
-    // Update frame thumbnails
     function refreshFramesStrip() {
         framesStripDiv.innerHTML = "";
         for (let i = 0; i < frames.length; i++) {
@@ -386,17 +395,14 @@
             const thumbDiv = document.createElement('div');
             thumbDiv.className = 'frame-thumb';
             if (i === currentFrameIndex) thumbDiv.classList.add('selected');
-            
             const thumbCanvas = document.createElement('canvas');
             thumbCanvas.width = 64;
             thumbCanvas.height = 48;
             const thumbCtx = thumbCanvas.getContext('2d');
             thumbCtx.drawImage(frameCanvas, 0, 0, 64, 48);
-            
             const indexSpan = document.createElement('div');
             indexSpan.className = 'frame-index';
             indexSpan.innerText = i+1;
-            
             thumbDiv.appendChild(thumbCanvas);
             thumbDiv.appendChild(indexSpan);
             thumbDiv.addEventListener('click', (function(idx) { 
@@ -416,7 +422,6 @@
         frameCounterSpan.innerText = `Frame ${currentFrameIndex+1} / ${frames.length}`;
     }
     
-    // Drawing on actual frame
     function drawOnFrame(x0, y0, x1, y1) {
         if (!frames.length) return;
         const frameCanvas = frames[currentFrameIndex];
@@ -425,19 +430,12 @@
         frameCtx.lineCap = 'round';
         frameCtx.lineJoin = 'round';
         frameCtx.lineWidth = brushSize;
-        
-        if (currentTool === "pencil") {
-            frameCtx.strokeStyle = currentColor;
-        } else { // eraser -> white
-            frameCtx.strokeStyle = "#FFFFFF";
-        }
-        
+        frameCtx.strokeStyle = currentTool === "pencil" ? currentColor : "#FFFFFF";
         frameCtx.beginPath();
         frameCtx.moveTo(x0, y0);
         frameCtx.lineTo(x1, y1);
         frameCtx.stroke();
         frameCtx.restore();
-        
         renderCurrentFrame();
     }
     
@@ -460,7 +458,6 @@
         return { x: canvasX, y: canvasY };
     }
     
-    // Drawing event handlers
     function startDraw(e) {
         if (playing) return;
         drawing = true;
@@ -473,36 +470,26 @@
     function draw(e) {
         if (!drawing || playing) return;
         const coords = getCanvasCoords(e);
-        const currentX = coords.x, currentY = coords.y;
-        drawOnFrame(lastX, lastY, currentX, currentY);
-        lastX = currentX;
-        lastY = currentY;
-        updateThumbnailAfterDraw();
+        drawOnFrame(lastX, lastY, coords.x, coords.y);
+        lastX = coords.x;
+        lastY = coords.y;
+        refreshFramesStrip();
     }
     
     function endDraw() {
         drawing = false;
-        updateThumbnailAfterDraw();
-    }
-    
-    function updateThumbnailAfterDraw() {
         refreshFramesStrip();
-        renderCurrentFrame();
     }
     
-    // ------------- Brush Preview (live circle) -------------
     function updateBrushPreview(e) {
         if (!previewCanvas) return;
         const coords = getCanvasCoords(e, mainCanvas);
         previewCtx.clearRect(0, 0, W, H);
-        // Draw a semi-transparent circle outline
         previewCtx.beginPath();
         previewCtx.arc(coords.x, coords.y, brushSize / 2, 0, Math.PI * 2);
         previewCtx.strokeStyle = currentTool === "pencil" ? currentColor : "#ffffff";
         previewCtx.lineWidth = 2;
-        previewCtx.shadowBlur = 0;
         previewCtx.stroke();
-        // add a small center dot
         previewCtx.beginPath();
         previewCtx.arc(coords.x, coords.y, 2, 0, Math.PI * 2);
         previewCtx.fillStyle = "#000000aa";
@@ -516,22 +503,13 @@
         previewCtx.clearRect(0, 0, W, H);
     }
     
-    // Attach mouse move for preview
     function initBrushPreviewEvents() {
-        mainCanvas.addEventListener('mousemove', (e) => {
-            updateBrushPreview(e);
-        });
-        mainCanvas.addEventListener('mouseleave', () => {
-            clearBrushPreview();
-        });
-        mainCanvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            updateBrushPreview(e);
-        });
-        mainCanvas.addEventListener('touchend', () => clearBrushPreview());
+        mainCanvas.addEventListener('mousemove', updateBrushPreview);
+        mainCanvas.addEventListener('mouseleave', clearBrushPreview);
+        mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); updateBrushPreview(e); });
+        mainCanvas.addEventListener('touchend', clearBrushPreview);
     }
     
-    // Frame management actions
     function clearCurrentFrame() {
         if (!frames.length) return;
         const frameCanvas = frames[currentFrameIndex];
@@ -569,10 +547,7 @@
     }
     
     function deleteCurrentFrame() {
-        if (frames.length <= 1) {
-            alert("Cannot delete last frame. Add a frame first.");
-            return;
-        }
+        if (frames.length <= 1) { alert("Cannot delete last frame"); return; }
         frames.splice(currentFrameIndex, 1);
         if (currentFrameIndex >= frames.length) currentFrameIndex = frames.length - 1;
         if (playing) stopAnimation();
@@ -599,39 +574,28 @@
         updateFrameCounter();
     }
     
-    // Animation
     function startAnimation() {
         if (playing) return;
-        if (frames.length === 0) return;
         playing = true;
         const fps = parseInt(fpsSlider.value);
-        const intervalMs = 1000 / fps;
         playInterval = setInterval(() => {
             if (!playing) return;
             currentFrameIndex = (currentFrameIndex + 1) % frames.length;
             renderCurrentFrame();
             refreshFramesStrip();
             updateFrameCounter();
-        }, intervalMs);
+        }, 1000 / fps);
     }
     
     function stopAnimation() {
-        if (playInterval) {
-            clearInterval(playInterval);
-            playInterval = null;
-        }
+        if (playInterval) { clearInterval(playInterval); playInterval = null; }
         playing = false;
     }
     
-    // Save/Load Project
     function saveProject() {
-        const framesData = [];
-        for (let i = 0; i < frames.length; i++) {
-            framesData.push(frames[i].toDataURL("image/png"));
-        }
+        const framesData = frames.map(canvas => canvas.toDataURL("image/png"));
         const project = { version: "1.0", width: W, height: H, frames: framesData };
-        const jsonStr = JSON.stringify(project);
-        const blob = new Blob([jsonStr], {type: "application/json"});
+        const blob = new Blob([JSON.stringify(project)], {type: "application/json"});
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = "tvs_animation.json";
@@ -653,14 +617,12 @@
                         await new Promise((res, rej) => {
                             img.onload = () => {
                                 const canvas = document.createElement('canvas');
-                                canvas.width = W;
-                                canvas.height = H;
-                                const canvasCtx = canvas.getContext('2d');
-                                canvasCtx.drawImage(img, 0, 0, W, H);
+                                canvas.width = W; canvas.height = H;
+                                canvas.getContext('2d').drawImage(img, 0, 0, W, H);
                                 loadedFrames.push(canvas);
                                 res();
                             };
-                            img.onerror = () => rej(new Error("img load error"));
+                            img.onerror = () => rej(new Error("Image load error"));
                         });
                     }
                     if (loadedFrames.length === 0) loadedFrames.push(createBlankCanvas());
@@ -678,14 +640,12 @@
         });
     }
     
-    // Export PNG sequence (zip)
     async function exportPNGSequence() {
         if (frames.length === 0) return;
         const zip = new JSZip();
         for (let i = 0; i < frames.length; i++) {
             const dataURL = frames[i].toDataURL("image/png");
-            const base64Data = dataURL.split(',')[1];
-            zip.file(`frame_${String(i+1).padStart(3,'0')}.png`, base64Data, {base64: true});
+            zip.file(`frame_${String(i+1).padStart(3,'0')}.png`, dataURL.split(',')[1], {base64: true});
         }
         const content = await zip.generateAsync({type:"blob"});
         const link = document.createElement('a');
@@ -695,48 +655,65 @@
         URL.revokeObjectURL(link.href);
     }
     
-    // Export GIF using gif.js
+    // FIXED GIF EXPORT: embed worker as Blob to avoid CDN issues
     function exportGIF() {
         if (frames.length === 0) {
-            alert("No frames to export.");
+            showToast("No frames to export", true);
             return;
         }
-        const gif = new GIF({
-            workers: 2,
-            quality: 10,
-            width: W,
-            height: H,
-            workerScript: "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
-        });
+        showToast("Rendering GIF... please wait", false);
         
-        // For each frame, add canvas image data
-        for (let i = 0; i < frames.length; i++) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = W;
-            tempCanvas.height = H;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(frames[i], 0, 0);
-            gif.addFrame(tempCanvas, { delay: 1000 / parseInt(fpsSlider.value), copy: true });
-        }
-        
-        gif.on('finished', function(blob) {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = "tvs_animation.gif";
-            link.click();
-            URL.revokeObjectURL(link.href);
-            alert("GIF exported successfully!");
-        });
-        
-        gif.on('error', function(e) {
-            console.error(e);
-            alert("GIF generation error. Try reducing frames or check console.");
-        });
-        
-        gif.render();
+        // Fetch the worker script from CDN and create a Blob URL
+        const workerScriptURL = "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js";
+        fetch(workerScriptURL)
+            .then(response => response.text())
+            .then(workerCode => {
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                const blobURL = URL.createObjectURL(blob);
+                
+                const gif = new GIF({
+                    workers: 2,
+                    quality: 10,
+                    width: W,
+                    height: H,
+                    workerScript: blobURL
+                });
+                
+                const fps = parseInt(fpsSlider.value);
+                const delayMs = 1000 / fps;
+                
+                for (let i = 0; i < frames.length; i++) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = W;
+                    tempCanvas.height = H;
+                    tempCanvas.getContext('2d').drawImage(frames[i], 0, 0);
+                    gif.addFrame(tempCanvas, { delay: delayMs, copy: true });
+                }
+                
+                gif.on('finished', function(blob) {
+                    URL.revokeObjectURL(blobURL);
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "tvs_animation.gif";
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    showToast("GIF exported successfully!");
+                });
+                
+                gif.on('error', function(e) {
+                    URL.revokeObjectURL(blobURL);
+                    console.error(e);
+                    showToast("GIF error: " + (e.message || "unknown"), true);
+                });
+                
+                gif.render();
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Failed to load GIF worker. Check internet.", true);
+            });
     }
     
-    // ---------- Event Listeners ----------
     function initEventListeners() {
         mainCanvas.addEventListener('mousedown', startDraw);
         mainCanvas.addEventListener('mousemove', draw);
@@ -746,23 +723,16 @@
         mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
         mainCanvas.addEventListener('touchend', endDraw);
         
-        // Color picker fix: trigger hidden input
-        colorSwatch.addEventListener('click', () => {
-            colorPicker.click();
-        });
+        colorSwatch.addEventListener('click', () => colorPicker.click());
         colorPicker.addEventListener('input', (e) => {
             currentColor = e.target.value;
             colorSwatch.style.backgroundColor = currentColor;
-            if (currentTool === "pencil") {
-                // update preview color if eraser? fine.
-            }
         });
         
         pencilBtn.addEventListener('click', () => {
             currentTool = "pencil";
             pencilBtn.classList.add('active');
             eraserBtn.classList.remove('active');
-            updateBrushPreview({ clientX: lastX, clientY: lastY }); // refresh preview style
         });
         eraserBtn.addEventListener('click', () => {
             currentTool = "eraser";
@@ -772,15 +742,8 @@
         brushSlider.addEventListener('input', (e) => {
             brushSize = parseInt(e.target.value);
             brushValueSpan.innerText = brushSize + "px";
-            // force preview redraw if mouse inside
-            if (document.activeElement !== mainCanvas) return;
-            const fakeEvent = { clientX: lastX ?? 0, clientY: lastY ?? 0 };
-            updateBrushPreview(fakeEvent);
         });
-        onionToggle.addEventListener('change', (e) => {
-            onionEnabled = e.target.checked;
-            renderCurrentFrame();
-        });
+        onionToggle.addEventListener('change', (e) => { onionEnabled = e.target.checked; renderCurrentFrame(); });
         clearFrameBtn.addEventListener('click', clearCurrentFrame);
         duplicateFrameBtn.addEventListener('click', duplicateCurrentFrame);
         prevFrameBtn.addEventListener('click', prevFrame);
@@ -806,7 +769,6 @@
         });
     }
     
-    // Apply initial setup
     function setup() {
         initProject();
         initEventListeners();
