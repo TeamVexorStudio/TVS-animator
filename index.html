@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TVS Animator - 2D Frame Animation</title>
+    <!-- JSZip for PNG sequence & gif.js for GIF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e2f;
+            margin: 0;
+            padding: 20px;
+            color: #f0f0f0;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #2d2d3a;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 1.7rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 small {
+            font-size: 0.7rem;
+            background: #3c3c4a;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0 16px;
+            padding: 12px 16px;
+            background: #23232e;
+            border-radius: 60px;
+            align-items: center;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 8px;
+            background: #1a1a24;
+            padding: 6px 14px;
+            border-radius: 40px;
+            align-items: center;
+        }
+
+        button, .tool-btn {
+            background: #3a3a48;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s ease;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: #5a5a70;
+            transform: scale(0.97);
+        }
+
+        button.active {
+            background: #7c4dff;
+            box-shadow: 0 0 6px #b47cff;
+        }
+
+        .color-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid white;
+            background: #000000;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: 0.05s linear;
+        }
+        .color-preview:active {
+            transform: scale(0.95);
+        }
+
+        input[type="color"] {
+            width: 0;
+            height: 0;
+            opacity: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .brush-slider {
+            width: 140px;
+            vertical-align: middle;
+        }
+
+        .frame-bar {
+            margin: 20px 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .frames-strip {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 12px 6px;
+            background: #1e1e28;
+            border-radius: 20px;
+            flex: 1;
+        }
+
+        .frame-thumb {
+            background: #2c2c38;
+            border-radius: 12px;
+            padding: 6px;
+            cursor: pointer;
+            transition: 0.1s;
+            border: 2px solid transparent;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .frame-thumb.selected {
+            border-color: #7c4dff;
+            background: #3a2e5a;
+            transform: scale(0.98);
+        }
+
+        .frame-thumb canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 6px;
+            background: white;
+            box-shadow: 0 2px 6px black;
+        }
+
+        .frame-index {
+            font-size: 11px;
+            margin-top: 6px;
+            font-weight: bold;
+        }
+
+        .canvas-area {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        #mainCanvas {
+            background: white;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+            border-radius: 16px;
+            cursor: crosshair;
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            border: 2px solid #4a4a5a;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            background: #1a1a24;
+            padding: 6px 12px;
+            border-radius: 30px;
+            display: inline-block;
+        }
+
+        hr {
+            border-color: #3a3a48;
+            margin: 16px 0;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="range"] {
+            width: 120px;
+        }
+        .brush-preview-canvas {
+            position: absolute;
+            pointer-events: none;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <h1>🎬 TVS Animator <small>2D Frame Studio</small></h1>
+
+    <!-- Top Tools -->
+    <div class="toolbar">
+        <div class="tool-group">
+            <button id="pencilBtn" class="tool-btn active">✏️ Pencil</button>
+            <button id="eraserBtn" class="tool-btn">🧽 Eraser</button>
+        </div>
+        <div class="tool-group">
+            <div id="colorSwatch" class="color-preview" style="background:#000000;"></div>
+            <input type="color" id="colorPicker" value="#000000">
+            <span>🎨 Brush size:</span>
+            <input type="range" id="brushSize" min="1" max="40" value="6" step="1">
+            <span id="brushValue">6px</span>
+        </div>
+        <div class="tool-group">
+            <label>🧅 Onion Skin</label>
+            <input type="checkbox" id="onionToggle">
+            <span class="status">(prev frame)</span>
+        </div>
+        <div class="tool-group">
+            <button id="clearFrameBtn">🗑️ Clear Frame</button>
+            <button id="duplicateFrameBtn">📑 Duplicate Frame</button>
+        </div>
+    </div>
+
+    <!-- Animation & frame controls -->
+    <div class="frame-bar">
+        <div class="tool-group">
+            <button id="prevFrameBtn">◀ Prev</button>
+            <span id="frameCounter">Frame 1 / 1</span>
+            <button id="nextFrameBtn">Next ▶</button>
+            <button id="addFrameBtn">+ Add Frame</button>
+            <button id="delFrameBtn">− Delete Frame</button>
+        </div>
+        <div class="tool-group">
+            <span>⏵ FPS:</span>
+            <input type="range" id="fpsSlider" min="4" max="24" value="12" step="1">
+            <span id="fpsValue">12</span>
+            <button id="playBtn">▶ Play</button>
+            <button id="stopBtn">⏹ Stop</button>
+        </div>
+        <div class="tool-group">
+            <button id="saveProjBtn">💾 Save Project</button>
+            <label for="loadProjInput" class="tool-btn" style="background:#4a3b7c;">📂 Load Project</label>
+            <input type="file" id="loadProjInput" accept=".json" style="display:none">
+            <button id="exportGifBtn">🎞️ Export GIF</button>
+            <button id="exportPngSeqBtn">📸 Export PNG Seq</button>
+        </div>
+    </div>
+
+    <!-- Drawing Canvas + Brush Preview Overlay -->
+    <div class="canvas-area" style="position: relative; display: inline-block; width:100%; text-align:center;">
+        <canvas id="mainCanvas" width="720" height="480" style="width:100%; max-width:720px; aspect-ratio:720/480; border-radius:16px;"></canvas>
+        <canvas id="brushPreviewCanvas" width="720" height="480" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width:100%; max-width:720px; aspect-ratio:720/480; pointer-events: none; border-radius:16px;"></canvas>
+    </div>
+
+    <!-- Frames strip -->
+    <div style="margin-top: 12px;">
+        <div style="margin-bottom: 8px;">🎞️ FRAMES (click to select)</div>
+        <div id="framesStrip" class="frames-strip"></div>
+    </div>
+    <div class="flex-row" style="justify-content: space-between; margin-top: 12px;">
+        <span class="status">💡 Tip: Click color circle to change color | Brush preview follows cursor | Eraser paints white</span>
+        <span class="status">✨ TVS Studio - 2D Animation</span>
+    </div>
+</div>
+
+<script>
+    // ---------- CONFIG ----------
+    const W = 720, H = 480;
+    const mainCanvas = document.getElementById('mainCanvas');
+    const ctx = mainCanvas.getContext('2d');
+    const previewCanvas = document.getElementById('brushPreviewCanvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    
+    // Data model
+    let frames = [];            // Array of HTMLCanvasElement (each frame)
+    let currentFrameIndex = 0;
+    let playing = false;
+    let playInterval = null;
+    
+    // Tools
+    let currentTool = "pencil";
+    let currentColor = "#000000";
+    let brushSize = 6;
+    let onionEnabled = false;
+    
+    // Drawing state
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    
+    // DOM elements
+    const pencilBtn = document.getElementById('pencilBtn');
+    const eraserBtn = document.getElementById('eraserBtn');
+    const colorSwatch = document.getElementById('colorSwatch');
+    const colorPicker = document.getElementById('colorPicker');
+    const brushSlider = document.getElementById('brushSize');
+    const brushValueSpan = document.getElementById('brushValue');
+    const onionToggle = document.getElementById('onionToggle');
+    const clearFrameBtn = document.getElementById('clearFrameBtn');
+    const duplicateFrameBtn = document.getElementById('duplicateFrameBtn');
+    const prevFrameBtn = document.getElementById('prevFrameBtn');
+    const nextFrameBtn = document.getElementById('nextFrameBtn');
+    const addFrameBtn = document.getElementById('addFrameBtn');
+    const delFrameBtn = document.getElementById('delFrameBtn');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const saveProjBtn = document.getElementById('saveProjBtn');
+    const loadProjInput = document.getElementById('loadProjInput');
+    const exportPngSeqBtn = document.getElementById('exportPngSeqBtn');
+    const exportGifBtn = document.getElementById('exportGifBtn');
+    const frameCounterSpan = document.getElementById('frameCounter');
+    const fpsSlider = document.getElementById('fpsSlider');
+    const fpsValueSpan = document.getElementById('fpsValue');
+    const framesStripDiv = document.getElementById('framesStrip');
+    
+    // ---------- Helper: blank white canvas ----------
+    function createBlankCanvas() {
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const tempCtx = canvas.getContext('2d');
+        tempCtx.fillStyle = "#FFFFFF";
+        tempCtx.fillRect(0, 0, W, H);
+        return canvas;
+    }
+    
+    // Initialize project with one frame
+    function initProject() {
+        frames = [];
+        frames.push(createBlankCanvas());
+        currentFrameIndex = 0;
+        stopAnimation();
+        renderCurrentFrame();
+        refreshFramesStrip();
+        updateFrameCounter();
+    }
+    
+    // Render main canvas + onion skin
+    function renderCurrentFrame() {
+        if (!frames.length) return;
+        const currentCanvas = frames[currentFrameIndex];
+        ctx.clearRect(0, 0, W, H);
+        ctx.drawImage(currentCanvas, 0, 0);
+        
+        if (onionEnabled) {
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            if (currentFrameIndex > 0) {
+                ctx.drawImage(frames[currentFrameIndex - 1], 0, 0);
+            }
+            if (currentFrameIndex === 0 && frames.length > 1) {
+                ctx.drawImage(frames[1], 0, 0);
+            }
+            ctx.restore();
+        }
+    }
+    
+    // Update frame thumbnails
+    function refreshFramesStrip() {
+        framesStripDiv.innerHTML = "";
+        for (let i = 0; i < frames.length; i++) {
+            const frameCanvas = frames[i];
+            const thumbDiv = document.createElement('div');
+            thumbDiv.className = 'frame-thumb';
+            if (i === currentFrameIndex) thumbDiv.classList.add('selected');
+            
+            const thumbCanvas = document.createElement('canvas');
+            thumbCanvas.width = 64;
+            thumbCanvas.height = 48;
+            const thumbCtx = thumbCanvas.getContext('2d');
+            thumbCtx.drawImage(frameCanvas, 0, 0, 64, 48);
+            
+            const indexSpan = document.createElement('div');
+            indexSpan.className = 'frame-index';
+            indexSpan.innerText = i+1;
+            
+            thumbDiv.appendChild(thumbCanvas);
+            thumbDiv.appendChild(indexSpan);
+            thumbDiv.addEventListener('click', (function(idx) { 
+                return function() { 
+                    if(playing) stopAnimation();
+                    currentFrameIndex = idx;
+                    renderCurrentFrame();
+                    refreshFramesStrip();
+                    updateFrameCounter();
+                };
+            })(i));
+            framesStripDiv.appendChild(thumbDiv);
+        }
+    }
+    
+    function updateFrameCounter() {
+        frameCounterSpan.innerText = `Frame ${currentFrameIndex+1} / ${frames.length}`;
+    }
+    
+    // Drawing on actual frame
+    function drawOnFrame(x0, y0, x1, y1) {
+        if (!frames.length) return;
+        const frameCanvas = frames[currentFrameIndex];
+        const frameCtx = frameCanvas.getContext('2d');
+        frameCtx.save();
+        frameCtx.lineCap = 'round';
+        frameCtx.lineJoin = 'round';
+        frameCtx.lineWidth = brushSize;
+        
+        if (currentTool === "pencil") {
+            frameCtx.strokeStyle = currentColor;
+        } else { // eraser -> white
+            frameCtx.strokeStyle = "#FFFFFF";
+        }
+        
+        frameCtx.beginPath();
+        frameCtx.moveTo(x0, y0);
+        frameCtx.lineTo(x1, y1);
+        frameCtx.stroke();
+        frameCtx.restore();
+        
+        renderCurrentFrame();
+    }
+    
+    function getCanvasCoords(e, canvasElement = mainCanvas) {
+        const rect = canvasElement.getBoundingClientRect();
+        const scaleX = canvasElement.width / rect.width;
+        const scaleY = canvasElement.height / rect.height;
+        let clientX, clientY;
+        if (e.touches) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        let canvasX = (clientX - rect.left) * scaleX;
+        let canvasY = (clientY - rect.top) * scaleY;
+        canvasX = Math.min(Math.max(0, canvasX), W);
+        canvasY = Math.min(Math.max(0, canvasY), H);
+        return { x: canvasX, y: canvasY };
+    }
+    
+    // Drawing event handlers
+    function startDraw(e) {
+        if (playing) return;
+        drawing = true;
+        const coords = getCanvasCoords(e);
+        lastX = coords.x;
+        lastY = coords.y;
+        drawOnFrame(lastX, lastY, lastX, lastY);
+    }
+    
+    function draw(e) {
+        if (!drawing || playing) return;
+        const coords = getCanvasCoords(e);
+        const currentX = coords.x, currentY = coords.y;
+        drawOnFrame(lastX, lastY, currentX, currentY);
+        lastX = currentX;
+        lastY = currentY;
+        updateThumbnailAfterDraw();
+    }
+    
+    function endDraw() {
+        drawing = false;
+        updateThumbnailAfterDraw();
+    }
+    
+    function updateThumbnailAfterDraw() {
+        refreshFramesStrip();
+        renderCurrentFrame();
+    }
+    
+    // ------------- Brush Preview (live circle) -------------
+    function updateBrushPreview(e) {
+        if (!previewCanvas) return;
+        const coords = getCanvasCoords(e, mainCanvas);
+        previewCtx.clearRect(0, 0, W, H);
+        // Draw a semi-transparent circle outline
+        previewCtx.beginPath();
+        previewCtx.arc(coords.x, coords.y, brushSize / 2, 0, Math.PI * 2);
+        previewCtx.strokeStyle = currentTool === "pencil" ? currentColor : "#ffffff";
+        previewCtx.lineWidth = 2;
+        previewCtx.shadowBlur = 0;
+        previewCtx.stroke();
+        // add a small center dot
+        previewCtx.beginPath();
+        previewCtx.arc(coords.x, coords.y, 2, 0, Math.PI * 2);
+        previewCtx.fillStyle = "#000000aa";
+        previewCtx.fill();
+        previewCtx.strokeStyle = "white";
+        previewCtx.lineWidth = 1;
+        previewCtx.stroke();
+    }
+    
+    function clearBrushPreview() {
+        previewCtx.clearRect(0, 0, W, H);
+    }
+    
+    // Attach mouse move for preview
+    function initBrushPreviewEvents() {
+        mainCanvas.addEventListener('mousemove', (e) => {
+            updateBrushPreview(e);
+        });
+        mainCanvas.addEventListener('mouseleave', () => {
+            clearBrushPreview();
+        });
+        mainCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            updateBrushPreview(e);
+        });
+        mainCanvas.addEventListener('touchend', () => clearBrushPreview());
+    }
+    
+    // Frame management actions
+    function clearCurrentFrame() {
+        if (!frames.length) return;
+        const frameCanvas = frames[currentFrameIndex];
+        const frameCtx = frameCanvas.getContext('2d');
+        frameCtx.fillStyle = "#FFFFFF";
+        frameCtx.fillRect(0, 0, W, H);
+        renderCurrentFrame();
+        refreshFramesStrip();
+    }
+    
+    function duplicateCurrentFrame() {
+        if (!frames.length) return;
+        const currentCanvas = frames[currentFrameIndex];
+        const newCanvas = document.createElement('canvas');
+        newCanvas.width = W;
+        newCanvas.height = H;
+        const newCtx = newCanvas.getContext('2d');
+        newCtx.drawImage(currentCanvas, 0, 0);
+        frames.splice(currentFrameIndex + 1, 0, newCanvas);
+        currentFrameIndex++;
+        if (playing) stopAnimation();
+        renderCurrentFrame();
+        refreshFramesStrip();
+        updateFrameCounter();
+    }
+    
+    function addNewFrame() {
+        const newCanvas = createBlankCanvas();
+        frames.splice(currentFrameIndex + 1, 0, newCanvas);
+        currentFrameIndex++;
+        if (playing) stopAnimation();
+        renderCurrentFrame();
+        refreshFramesStrip();
+        updateFrameCounter();
+    }
+    
+    function deleteCurrentFrame() {
+        if (frames.length <= 1) {
+            alert("Cannot delete last frame. Add a frame first.");
+            return;
+        }
+        frames.splice(currentFrameIndex, 1);
+        if (currentFrameIndex >= frames.length) currentFrameIndex = frames.length - 1;
+        if (playing) stopAnimation();
+        renderCurrentFrame();
+        refreshFramesStrip();
+        updateFrameCounter();
+    }
+    
+    function nextFrame() {
+        if (playing) stopAnimation();
+        if (!frames.length) return;
+        currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+        renderCurrentFrame();
+        refreshFramesStrip();
+        updateFrameCounter();
+    }
+    
+    function prevFrame() {
+        if (playing) stopAnimation();
+        if (!frames.length) return;
+        currentFrameIndex = (currentFrameIndex - 1 + frames.length) % frames.length;
+        renderCurrentFrame();
+        refreshFramesStrip();
+        updateFrameCounter();
+    }
+    
+    // Animation
+    function startAnimation() {
+        if (playing) return;
+        if (frames.length === 0) return;
+        playing = true;
+        const fps = parseInt(fpsSlider.value);
+        const intervalMs = 1000 / fps;
+        playInterval = setInterval(() => {
+            if (!playing) return;
+            currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+        }, intervalMs);
+    }
+    
+    function stopAnimation() {
+        if (playInterval) {
+            clearInterval(playInterval);
+            playInterval = null;
+        }
+        playing = false;
+    }
+    
+    // Save/Load Project
+    function saveProject() {
+        const framesData = [];
+        for (let i = 0; i < frames.length; i++) {
+            framesData.push(frames[i].toDataURL("image/png"));
+        }
+        const project = { version: "1.0", width: W, height: H, frames: framesData };
+        const jsonStr = JSON.stringify(project);
+        const blob = new Blob([jsonStr], {type: "application/json"});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = "tvs_animation.json";
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+    
+    async function loadProjectFromFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const project = JSON.parse(e.target.result);
+                    if (!project.frames || !Array.isArray(project.frames)) throw new Error("Invalid format");
+                    const loadedFrames = [];
+                    for (let dataURL of project.frames) {
+                        const img = new Image();
+                        img.src = dataURL;
+                        await new Promise((res, rej) => {
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = W;
+                                canvas.height = H;
+                                const canvasCtx = canvas.getContext('2d');
+                                canvasCtx.drawImage(img, 0, 0, W, H);
+                                loadedFrames.push(canvas);
+                                res();
+                            };
+                            img.onerror = () => rej(new Error("img load error"));
+                        });
+                    }
+                    if (loadedFrames.length === 0) loadedFrames.push(createBlankCanvas());
+                    frames = loadedFrames;
+                    currentFrameIndex = 0;
+                    if (playing) stopAnimation();
+                    renderCurrentFrame();
+                    refreshFramesStrip();
+                    updateFrameCounter();
+                    resolve();
+                } catch (err) { reject(err); }
+            };
+            reader.onerror = () => reject(new Error("File read error"));
+            reader.readAsText(file);
+        });
+    }
+    
+    // Export PNG sequence (zip)
+    async function exportPNGSequence() {
+        if (frames.length === 0) return;
+        const zip = new JSZip();
+        for (let i = 0; i < frames.length; i++) {
+            const dataURL = frames[i].toDataURL("image/png");
+            const base64Data = dataURL.split(',')[1];
+            zip.file(`frame_${String(i+1).padStart(3,'0')}.png`, base64Data, {base64: true});
+        }
+        const content = await zip.generateAsync({type:"blob"});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = "tvs_frames_sequence.zip";
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+    
+    // Export GIF using gif.js
+    function exportGIF() {
+        if (frames.length === 0) {
+            alert("No frames to export.");
+            return;
+        }
+        const gif = new GIF({
+            workers: 2,
+            quality: 10,
+            width: W,
+            height: H,
+            workerScript: "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
+        });
+        
+        // For each frame, add canvas image data
+        for (let i = 0; i < frames.length; i++) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = W;
+            tempCanvas.height = H;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(frames[i], 0, 0);
+            gif.addFrame(tempCanvas, { delay: 1000 / parseInt(fpsSlider.value), copy: true });
+        }
+        
+        gif.on('finished', function(blob) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "tvs_animation.gif";
+            link.click();
+            URL.revokeObjectURL(link.href);
+            alert("GIF exported successfully!");
+        });
+        
+        gif.on('error', function(e) {
+            console.error(e);
+            alert("GIF generation error. Try reducing frames or check console.");
+        });
+        
+        gif.render();
+    }
+    
+    // ---------- Event Listeners ----------
+    function initEventListeners() {
+        mainCanvas.addEventListener('mousedown', startDraw);
+        mainCanvas.addEventListener('mousemove', draw);
+        mainCanvas.addEventListener('mouseup', endDraw);
+        mainCanvas.addEventListener('mouseleave', endDraw);
+        mainCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
+        mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+        mainCanvas.addEventListener('touchend', endDraw);
+        
+        // Color picker fix: trigger hidden input
+        colorSwatch.addEventListener('click', () => {
+            colorPicker.click();
+        });
+        colorPicker.addEventListener('input', (e) => {
+            currentColor = e.target.value;
+            colorSwatch.style.backgroundColor = currentColor;
+            if (currentTool === "pencil") {
+                // update preview color if eraser? fine.
+            }
+        });
+        
+        pencilBtn.addEventListener('click', () => {
+            currentTool = "pencil";
+            pencilBtn.classList.add('active');
+            eraserBtn.classList.remove('active');
+            updateBrushPreview({ clientX: lastX, clientY: lastY }); // refresh preview style
+        });
+        eraserBtn.addEventListener('click', () => {
+            currentTool = "eraser";
+            eraserBtn.classList.add('active');
+            pencilBtn.classList.remove('active');
+        });
+        brushSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            brushValueSpan.innerText = brushSize + "px";
+            // force preview redraw if mouse inside
+            if (document.activeElement !== mainCanvas) return;
+            const fakeEvent = { clientX: lastX ?? 0, clientY: lastY ?? 0 };
+            updateBrushPreview(fakeEvent);
+        });
+        onionToggle.addEventListener('change', (e) => {
+            onionEnabled = e.target.checked;
+            renderCurrentFrame();
+        });
+        clearFrameBtn.addEventListener('click', clearCurrentFrame);
+        duplicateFrameBtn.addEventListener('click', duplicateCurrentFrame);
+        prevFrameBtn.addEventListener('click', prevFrame);
+        nextFrameBtn.addEventListener('click', nextFrame);
+        addFrameBtn.addEventListener('click', addNewFrame);
+        delFrameBtn.addEventListener('click', deleteCurrentFrame);
+        playBtn.addEventListener('click', startAnimation);
+        stopBtn.addEventListener('click', stopAnimation);
+        saveProjBtn.addEventListener('click', saveProject);
+        loadProjInput.addEventListener('change', async (e) => {
+            if (e.target.files && e.target.files[0]) {
+                try {
+                    await loadProjectFromFile(e.target.files[0]);
+                } catch (err) { alert("Load error: " + err.message); }
+                loadProjInput.value = '';
+            }
+        });
+        exportPngSeqBtn.addEventListener('click', exportPNGSequence);
+        exportGifBtn.addEventListener('click', exportGIF);
+        fpsSlider.addEventListener('input', (e) => {
+            fpsValueSpan.innerText = e.target.value;
+            if (playing) { stopAnimation(); startAnimation(); }
+        });
+    }
+    
+    // Apply initial setup
+    function setup() {
+        initProject();
+        initEventListeners();
+        initBrushPreviewEvents();
+        colorSwatch.style.backgroundColor = currentColor;
+        brushValueSpan.innerText = brushSize + "px";
+        renderCurrentFrame();
+    }
+    
+    setup();
+</script>
+</body>
+</html>
