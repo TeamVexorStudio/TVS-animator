@@ -1,19 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TVS Animator - 2D Frame Animation</title>
-    <!-- JSZip for PNG sequence -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>TVS Animator v2.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- gif.js library -->
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <style>
         * {
             box-sizing: border-box;
             user-select: none;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1e1e2f;
@@ -21,16 +18,14 @@
             padding: 20px;
             color: #f0f0f0;
         }
-
         .app-container {
             max-width: 1400px;
             margin: 0 auto;
             background: #2d2d3a;
             border-radius: 28px;
             padding: 20px;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
         }
-
         h1 {
             margin: 0 0 8px 0;
             font-size: 1.7rem;
@@ -38,7 +33,6 @@
             align-items: center;
             gap: 12px;
         }
-
         h1 small {
             font-size: 0.7rem;
             background: #3c3c4a;
@@ -46,7 +40,6 @@
             border-radius: 40px;
             font-weight: normal;
         }
-
         .toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -57,7 +50,6 @@
             border-radius: 60px;
             align-items: center;
         }
-
         .tool-group {
             display: flex;
             gap: 8px;
@@ -65,9 +57,10 @@
             padding: 6px 14px;
             border-radius: 40px;
             align-items: center;
+            flex-wrap: wrap;
         }
-
-        button, .tool-btn {
+        button,
+        .tool-btn {
             background: #3a3a48;
             border: none;
             color: white;
@@ -80,18 +73,16 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
         }
-
         button:hover {
             background: #5a5a70;
             transform: scale(0.97);
         }
-
         button.active {
             background: #7c4dff;
             box-shadow: 0 0 6px #b47cff;
         }
-
         .color-preview {
             width: 36px;
             height: 36px;
@@ -99,13 +90,13 @@
             border: 2px solid white;
             background: #000000;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
             transition: 0.05s linear;
+            flex-shrink: 0;
         }
         .color-preview:active {
             transform: scale(0.95);
         }
-
         input[type="color"] {
             width: 0;
             height: 0;
@@ -113,12 +104,10 @@
             position: absolute;
             pointer-events: none;
         }
-
         .brush-slider {
             width: 140px;
             vertical-align: middle;
         }
-
         .frame-bar {
             margin: 20px 0 10px;
             display: flex;
@@ -126,7 +115,6 @@
             gap: 15px;
             flex-wrap: wrap;
         }
-
         .frames-strip {
             display: flex;
             gap: 10px;
@@ -135,57 +123,96 @@
             background: #1e1e28;
             border-radius: 20px;
             flex: 1;
+            min-height: 90px;
         }
-
         .frame-thumb {
             background: #2c2c38;
             border-radius: 12px;
             padding: 6px;
-            cursor: pointer;
+            cursor: grab;
             transition: 0.1s;
             border: 2px solid transparent;
             min-width: 70px;
             text-align: center;
+            position: relative;
+            touch-action: none;
         }
-
         .frame-thumb.selected {
             border-color: #7c4dff;
             background: #3a2e5a;
             transform: scale(0.98);
         }
-
         .frame-thumb canvas {
             display: block;
             margin: 0 auto;
             border-radius: 6px;
-            background: white;
+            background: #eee;
             box-shadow: 0 2px 6px black;
+            pointer-events: none;
         }
-
         .frame-index {
             font-size: 11px;
-            margin-top: 6px;
+            margin-top: 4px;
             font-weight: bold;
         }
-
+        .frame-delay-input {
+            width: 40px;
+            background: #1e1e28;
+            border: 1px solid #4a4a5a;
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 11px;
+            padding: 2px;
+        }
         .canvas-area {
             display: flex;
             justify-content: center;
             margin: 20px 0;
             position: relative;
         }
-
+        .canvas-wrapper {
+            display: inline-block;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+            border: 2px solid #4a4a5a;
+            position: relative;
+            touch-action: none;
+            cursor: grab;
+        }
+        .canvas-wrapper.dragging {
+            cursor: grabbing;
+        }
         #mainCanvas {
             background: white;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
-            border-radius: 16px;
+            display: block;
+            width: 720px;
+            height: 480px;
+            transform-origin: 0 0;
+            touch-action: none;
             cursor: crosshair;
-            width: 100%;
-            max-width: 800px;
-            height: auto;
-            border: 2px solid #4a4a5a;
         }
-
+        #brushPreviewCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            width: 720px;
+            height: 480px;
+            transform-origin: 0 0;
+        }
+        .canvas-wrapper {
+            width: 100%;
+            max-width: 720px;
+            aspect-ratio: 720/480;
+        }
+        .canvas-wrapper .inner-wrap {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
         .status {
             font-size: 0.8rem;
             background: #1a1a24;
@@ -193,28 +220,14 @@
             border-radius: 30px;
             display: inline-block;
         }
-
-        hr {
-            border-color: #3a3a48;
-            margin: 16px 0;
-        }
-
         .flex-row {
             display: flex;
             gap: 12px;
             align-items: center;
             flex-wrap: wrap;
         }
-
         input[type="range"] {
-            width: 120px;
-        }
-        .brush-preview-canvas {
-            position: absolute;
-            pointer-events: none;
-            top: 0;
-            left: 0;
-            z-index: 10;
+            width: 100px;
         }
         .toast {
             position: fixed;
@@ -231,554 +244,1358 @@
             transition: 0.2s;
             pointer-events: none;
         }
+        .bg-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+        .shortcuts-hint {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-left: 10px;
+        }
+        .zoom-controls {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .zoom-controls button {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+        }
+        .onion-controls label {
+            font-size: 0.75rem;
+            margin-right: 2px;
+        }
+        .onion-controls input[type="range"] {
+            width: 60px;
+        }
+        .onion-controls input[type="number"] {
+            width: 40px;
+            background: #1e1e28;
+            border: 1px solid #4a4a5a;
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            padding: 2px;
+        }
+        @media (max-width: 700px) {
+            .toolbar {
+                border-radius: 20px;
+                padding: 10px;
+            }
+            .tool-group {
+                padding: 4px 10px;
+            }
+            .app-container {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="app-container">
-    <h1>🎬 TVS Animator <small>2D Frame Studio</small></h1>
+    <div class="app-container">
+        <h1>🎬 TVS Animator <small>v2.0 · Pro Studio</small></h1>
 
-    <div class="toolbar">
-        <div class="tool-group">
-            <button id="pencilBtn" class="tool-btn active">✏️ Pencil</button>
-            <button id="eraserBtn" class="tool-btn">🧽 Eraser</button>
+        <div class="toolbar">
+            <div class="tool-group">
+                <button id="pencilBtn" class="tool-btn active">✏️ Pencil</button>
+                <button id="eraserBtn" class="tool-btn">🧽 Eraser</button>
+                <button id="fillBtn" class="tool-btn">🪣 Fill</button>
+            </div>
+            <div class="tool-group">
+                <span>🎨</span>
+                <div id="colorSwatch" class="color-preview" style="background:#000000;"></div>
+                <input type="color" id="colorPicker" value="#000000" />
+                <span class="bg-label">BG</span>
+                <div id="bgColorSwatch" class="color-preview" style="background:#ffffff;"></div>
+                <input type="color" id="bgColorPicker" value="#ffffff" />
+                <span>🖌️</span>
+                <input type="range" id="brushSize" min="1" max="40" value="6" step="1" />
+                <span id="brushValue">6px</span>
+            </div>
+            <div class="tool-group onion-controls">
+                <label>🧅 Onion</label>
+                <input type="checkbox" id="onionToggle" />
+                <label>opacity</label>
+                <input type="range" id="onionOpacity" min="5" max="80" value="35" />
+                <label>frames</label>
+                <input type="number" id="onionRange" min="1" max="3" value="1" style="width:36px;" />
+            </div>
+            <div class="tool-group">
+                <button id="undoBtn" title="Undo (Ctrl+Z)">↩️</button>
+                <button id="redoBtn" title="Redo (Ctrl+Y)">↪️</button>
+                <button id="clearFrameBtn">🗑️ Clear</button>
+                <button id="duplicateFrameBtn">📑 Duplicate</button>
+                <button id="applyBgBtn" style="background:#3a5a7c;">🔄 Apply BG</button>
+                <button id="clearAllBtn" style="background:#8a3a3a;">⚠️ Clear All</button>
+            </div>
+            <div class="tool-group zoom-controls">
+                <button id="zoomInBtn">🔍+</button>
+                <button id="zoomOutBtn">🔍−</button>
+                <button id="zoomResetBtn">1:1</button>
+                <span id="zoomLevel">100%</span>
+            </div>
         </div>
-        <div class="tool-group">
-            <div id="colorSwatch" class="color-preview" style="background:#000000;"></div>
-            <input type="color" id="colorPicker" value="#000000">
-            <span>🎨 Brush size:</span>
-            <input type="range" id="brushSize" min="1" max="40" value="6" step="1">
-            <span id="brushValue">6px</span>
+
+        <div class="frame-bar">
+            <div class="tool-group">
+                <button id="prevFrameBtn">◀ Prev</button>
+                <span id="frameCounter">Frame 1 / 1</span>
+                <button id="nextFrameBtn">Next ▶</button>
+                <button id="addFrameBtn">+ Add</button>
+                <button id="delFrameBtn">− Delete</button>
+                <button id="insertFrameBtn">⬅️ Insert</button>
+            </div>
+            <div class="tool-group">
+                <span>⏵ FPS:</span>
+                <input type="range" id="fpsSlider" min="4" max="24" value="12" step="1" />
+                <span id="fpsValue">12</span>
+                <button id="playBtn">▶ Play</button>
+                <button id="stopBtn">⏹ Stop</button>
+                <label style="font-size:0.7rem;">frame delay (ms):</label>
+                <input type="number" id="frameDelayInput" min="10" max="500" value="83" style="width:50px;" />
+                <button id="applyDelayBtn">Apply</button>
+            </div>
+            <div class="tool-group">
+                <button id="saveProjBtn">💾 Save</button>
+                <label for="loadProjInput" class="tool-btn" style="background:#4a3b7c;">📂 Load</label>
+                <input type="file" id="loadProjInput" accept=".json" style="display:none" />
+                <button id="exportGifBtn">🎞️ GIF</button>
+                <button id="exportPngSeqBtn">📸 PNG Seq</button>
+            </div>
         </div>
-        <div class="tool-group">
-            <label>🧅 Onion Skin</label>
-            <input type="checkbox" id="onionToggle">
-            <span class="status">(prev frame)</span>
+
+        <div class="canvas-area">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <div class="inner-wrap" id="innerWrap">
+                    <canvas id="mainCanvas" width="720" height="480"></canvas>
+                    <canvas id="brushPreviewCanvas" width="720" height="480"></canvas>
+                </div>
+            </div>
         </div>
-        <div class="tool-group">
-            <button id="clearFrameBtn">🗑️ Clear Frame</button>
-            <button id="duplicateFrameBtn">📑 Duplicate Frame</button>
+
+        <div style="margin-top:12px;">
+            <div style="margin-bottom:8px;">🎞️ FRAMES (drag to reorder · delay ms shown)</div>
+            <div id="framesStrip" class="frames-strip"></div>
+        </div>
+        <div class="flex-row" style="justify-content:space-between;margin-top:12px;">
+            <span class="status">💡 Shortcuts: B=Pen E=Eraser G=Fill [ ]=size ← →=frame Space=play Ctrl+Z/Y undo/redo</span>
+            <span class="status">✨ TVS Studio v2.0</span>
         </div>
     </div>
+    <div id="toastMsg" class="toast">Ready</div>
 
-    <div class="frame-bar">
-        <div class="tool-group">
-            <button id="prevFrameBtn">◀ Prev</button>
-            <span id="frameCounter">Frame 1 / 1</span>
-            <button id="nextFrameBtn">Next ▶</button>
-            <button id="addFrameBtn">+ Add Frame</button>
-            <button id="delFrameBtn">− Delete Frame</button>
-        </div>
-        <div class="tool-group">
-            <span>⏵ FPS:</span>
-            <input type="range" id="fpsSlider" min="4" max="24" value="12" step="1">
-            <span id="fpsValue">12</span>
-            <button id="playBtn">▶ Play</button>
-            <button id="stopBtn">⏹ Stop</button>
-        </div>
-        <div class="tool-group">
-            <button id="saveProjBtn">💾 Save Project</button>
-            <label for="loadProjInput" class="tool-btn" style="background:#4a3b7c;">📂 Load Project</label>
-            <input type="file" id="loadProjInput" accept=".json" style="display:none">
-            <button id="exportGifBtn">🎞️ Export GIF</button>
-            <button id="exportPngSeqBtn">📸 Export PNG Seq</button>
-        </div>
-    </div>
+    <script>
+        // ============================================================
+        //  CONFIG & STATE
+        // ============================================================
+        const W = 720,
+            H = 480;
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+        const previewCanvas = document.getElementById('brushPreviewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        const toast = document.getElementById('toastMsg');
 
-    <div class="canvas-area" style="position: relative; display: inline-block; width:100%; text-align:center;">
-        <canvas id="mainCanvas" width="720" height="480" style="width:100%; max-width:720px; aspect-ratio:720/480; border-radius:16px;"></canvas>
-        <canvas id="brushPreviewCanvas" width="720" height="480" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width:100%; max-width:720px; aspect-ratio:720/480; pointer-events: none; border-radius:16px;"></canvas>
-    </div>
+        // Core data
+        let frames = []; // array of canvases
+        let delays = []; // per-frame delay (ms)
+        let currentFrameIndex = 0;
+        let playing = false;
+        let playInterval = null;
 
-    <div style="margin-top: 12px;">
-        <div style="margin-bottom: 8px;">🎞️ FRAMES (click to select)</div>
-        <div id="framesStrip" class="frames-strip"></div>
-    </div>
-    <div class="flex-row" style="justify-content: space-between; margin-top: 12px;">
-        <span class="status">💡 Tip: Click color circle to change color | Brush preview follows cursor | Eraser paints white</span>
-        <span class="status">✨ TVS Studio - 2D Animation</span>
-    </div>
-</div>
-<div id="toastMsg" class="toast">GIF rendering...</div>
+        // Tools
+        let currentTool = "pencil"; // "pencil" | "eraser" | "fill"
+        let currentColor = "#000000";
+        let backgroundColor = "#ffffff";
+        let brushSize = 6;
 
-<script>
-    // ---------- CONFIG ----------
-    const W = 720, H = 480;
-    const mainCanvas = document.getElementById('mainCanvas');
-    const ctx = mainCanvas.getContext('2d');
-    const previewCanvas = document.getElementById('brushPreviewCanvas');
-    const previewCtx = previewCanvas.getContext('2d');
-    const toast = document.getElementById('toastMsg');
-    
-    let frames = [];
-    let currentFrameIndex = 0;
-    let playing = false;
-    let playInterval = null;
-    
-    let currentTool = "pencil";
-    let currentColor = "#000000";
-    let brushSize = 6;
-    let onionEnabled = false;
-    
-    let drawing = false;
-    let lastX = 0, lastY = 0;
-    
-    // DOM elements
-    const pencilBtn = document.getElementById('pencilBtn');
-    const eraserBtn = document.getElementById('eraserBtn');
-    const colorSwatch = document.getElementById('colorSwatch');
-    const colorPicker = document.getElementById('colorPicker');
-    const brushSlider = document.getElementById('brushSize');
-    const brushValueSpan = document.getElementById('brushValue');
-    const onionToggle = document.getElementById('onionToggle');
-    const clearFrameBtn = document.getElementById('clearFrameBtn');
-    const duplicateFrameBtn = document.getElementById('duplicateFrameBtn');
-    const prevFrameBtn = document.getElementById('prevFrameBtn');
-    const nextFrameBtn = document.getElementById('nextFrameBtn');
-    const addFrameBtn = document.getElementById('addFrameBtn');
-    const delFrameBtn = document.getElementById('delFrameBtn');
-    const playBtn = document.getElementById('playBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const saveProjBtn = document.getElementById('saveProjBtn');
-    const loadProjInput = document.getElementById('loadProjInput');
-    const exportPngSeqBtn = document.getElementById('exportPngSeqBtn');
-    const exportGifBtn = document.getElementById('exportGifBtn');
-    const frameCounterSpan = document.getElementById('frameCounter');
-    const fpsSlider = document.getElementById('fpsSlider');
-    const fpsValueSpan = document.getElementById('fpsValue');
-    const framesStripDiv = document.getElementById('framesStrip');
-    
-    function showToast(msg, isError = false) {
-        toast.style.backgroundColor = isError ? '#c44' : '#2a6f2a';
-        toast.innerText = msg;
-        toast.style.opacity = '1';
-        setTimeout(() => { toast.style.opacity = '0'; }, 2000);
-    }
-    
-    function createBlankCanvas() {
-        const canvas = document.createElement('canvas');
-        canvas.width = W;
-        canvas.height = H;
-        const tempCtx = canvas.getContext('2d');
-        tempCtx.fillStyle = "#FFFFFF";
-        tempCtx.fillRect(0, 0, W, H);
-        return canvas;
-    }
-    
-    function initProject() {
-        frames = [];
-        frames.push(createBlankCanvas());
-        currentFrameIndex = 0;
-        stopAnimation();
-        renderCurrentFrame();
-        refreshFramesStrip();
-        updateFrameCounter();
-    }
-    
-    function renderCurrentFrame() {
-        if (!frames.length) return;
-        const currentCanvas = frames[currentFrameIndex];
-        ctx.clearRect(0, 0, W, H);
-        ctx.drawImage(currentCanvas, 0, 0);
-        if (onionEnabled) {
-            ctx.save();
-            ctx.globalAlpha = 0.35;
-            if (currentFrameIndex > 0) ctx.drawImage(frames[currentFrameIndex - 1], 0, 0);
-            if (currentFrameIndex === 0 && frames.length > 1) ctx.drawImage(frames[1], 0, 0);
-            ctx.restore();
+        // Onion skin
+        let onionEnabled = false;
+        let onionOpacity = 35; // 0-100
+        let onionRange = 1; // number of previous frames to show
+
+        // Zoom & pan
+        let zoom = 1;
+        let panX = 0,
+            panY = 0;
+        let isPanning = false;
+        let panStartX = 0,
+            panStartY = 0;
+        let startPanX = 0,
+            startPanY = 0;
+
+        // Drawing state
+        let drawing = false;
+        let lastX = 0,
+            lastY = 0;
+
+        // Undo/Redo per frame
+        const MAX_HISTORY = 25;
+        // Each frame stores its own history stack (array of ImageData)
+        let undoStacks = []; // parallel to frames
+        let redoStacks = [];
+
+        // Drag reorder
+        let dragSrcIndex = null;
+
+        // DOM refs
+        const pencilBtn = document.getElementById('pencilBtn');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const fillBtn = document.getElementById('fillBtn');
+        const colorSwatch = document.getElementById('colorSwatch');
+        const colorPicker = document.getElementById('colorPicker');
+        const bgColorSwatch = document.getElementById('bgColorSwatch');
+        const bgColorPicker = document.getElementById('bgColorPicker');
+        const brushSlider = document.getElementById('brushSize');
+        const brushValueSpan = document.getElementById('brushValue');
+        const onionToggle = document.getElementById('onionToggle');
+        const onionOpacitySlider = document.getElementById('onionOpacity');
+        const onionRangeInput = document.getElementById('onionRange');
+        const clearFrameBtn = document.getElementById('clearFrameBtn');
+        const duplicateFrameBtn = document.getElementById('duplicateFrameBtn');
+        const prevFrameBtn = document.getElementById('prevFrameBtn');
+        const nextFrameBtn = document.getElementById('nextFrameBtn');
+        const addFrameBtn = document.getElementById('addFrameBtn');
+        const delFrameBtn = document.getElementById('delFrameBtn');
+        const insertFrameBtn = document.getElementById('insertFrameBtn');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveProjBtn = document.getElementById('saveProjBtn');
+        const loadProjInput = document.getElementById('loadProjInput');
+        const exportPngSeqBtn = document.getElementById('exportPngSeqBtn');
+        const exportGifBtn = document.getElementById('exportGifBtn');
+        const frameCounterSpan = document.getElementById('frameCounter');
+        const fpsSlider = document.getElementById('fpsSlider');
+        const fpsValueSpan = document.getElementById('fpsValue');
+        const framesStripDiv = document.getElementById('framesStrip');
+        const applyBgBtn = document.getElementById('applyBgBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const frameDelayInput = document.getElementById('frameDelayInput');
+        const applyDelayBtn = document.getElementById('applyDelayBtn');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const innerWrap = document.getElementById('innerWrap');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+        const zoomLevelSpan = document.getElementById('zoomLevel');
+
+        // ============================================================
+        //  HELPERS
+        // ============================================================
+        function showToast(msg, isError = false) {
+            toast.style.backgroundColor = isError ? '#c44' : '#2a6f2a';
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
         }
-    }
-    
-    function refreshFramesStrip() {
-        framesStripDiv.innerHTML = "";
-        for (let i = 0; i < frames.length; i++) {
-            const frameCanvas = frames[i];
-            const thumbDiv = document.createElement('div');
-            thumbDiv.className = 'frame-thumb';
-            if (i === currentFrameIndex) thumbDiv.classList.add('selected');
-            const thumbCanvas = document.createElement('canvas');
-            thumbCanvas.width = 64;
-            thumbCanvas.height = 48;
-            const thumbCtx = thumbCanvas.getContext('2d');
-            thumbCtx.drawImage(frameCanvas, 0, 0, 64, 48);
-            const indexSpan = document.createElement('div');
-            indexSpan.className = 'frame-index';
-            indexSpan.innerText = i+1;
-            thumbDiv.appendChild(thumbCanvas);
-            thumbDiv.appendChild(indexSpan);
-            thumbDiv.addEventListener('click', (function(idx) { 
-                return function() { 
-                    if(playing) stopAnimation();
-                    currentFrameIndex = idx;
+
+        function createBlankCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = W;
+            canvas.height = H;
+            const c = canvas.getContext('2d');
+            c.fillStyle = backgroundColor;
+            c.fillRect(0, 0, W, H);
+            return canvas;
+        }
+
+        // Deep copy of a canvas (returns new canvas)
+        function cloneCanvas(canvas) {
+            const c = document.createElement('canvas');
+            c.width = W;
+            c.height = H;
+            c.getContext('2d').drawImage(canvas, 0, 0);
+            return c;
+        }
+
+        // Get ImageData from canvas
+        function getImageData(canvas) {
+            return canvas.getContext('2d').getImageData(0, 0, W, H);
+        }
+
+        // Apply ImageData to canvas
+        function putImageData(canvas, imageData) {
+            canvas.getContext('2d').putImageData(imageData, 0, 0);
+        }
+
+        // Push undo snapshot for current frame
+        function pushUndo() {
+            if (!frames.length) return;
+            const frame = frames[currentFrameIndex];
+            const data = getImageData(frame);
+            if (!undoStacks[currentFrameIndex]) undoStacks[currentFrameIndex] = [];
+            const stack = undoStacks[currentFrameIndex];
+            // If we have redo items, clear them because we are branching
+            if (redoStacks[currentFrameIndex] && redoStacks[currentFrameIndex].length > 0) {
+                redoStacks[currentFrameIndex] = [];
+            }
+            stack.push(data);
+            if (stack.length > MAX_HISTORY) stack.shift();
+            // Update button states
+            updateUndoButtons();
+        }
+
+        function undo() {
+            if (!frames.length) return;
+            const stack = undoStacks[currentFrameIndex];
+            if (!stack || stack.length === 0) return;
+            // Save current state to redo
+            const currentData = getImageData(frames[currentFrameIndex]);
+            if (!redoStacks[currentFrameIndex]) redoStacks[currentFrameIndex] = [];
+            redoStacks[currentFrameIndex].push(currentData);
+            // Restore last undo
+            const data = stack.pop();
+            putImageData(frames[currentFrameIndex], data);
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateUndoButtons();
+            autoSave();
+        }
+
+        function redo() {
+            if (!frames.length) return;
+            const stack = redoStacks[currentFrameIndex];
+            if (!stack || stack.length === 0) return;
+            const data = stack.pop();
+            // Save current to undo
+            const currentData = getImageData(frames[currentFrameIndex]);
+            if (!undoStacks[currentFrameIndex]) undoStacks[currentFrameIndex] = [];
+            undoStacks[currentFrameIndex].push(currentData);
+            putImageData(frames[currentFrameIndex], data);
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateUndoButtons();
+            autoSave();
+        }
+
+        function updateUndoButtons() {
+            // Just visual feedback – we'll enable/disable later
+        }
+
+        // ============================================================
+        //  RENDERING
+        // ============================================================
+        function renderCurrentFrame() {
+            if (!frames.length) return;
+            const frameCanvas = frames[currentFrameIndex];
+            ctx.clearRect(0, 0, W, H);
+            // Apply zoom/pan via transform
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(zoom, zoom);
+            ctx.translate(panX, panY);
+            ctx.drawImage(frameCanvas, 0, 0);
+            ctx.restore();
+
+            // Onion skin
+            if (onionEnabled) {
+                ctx.save();
+                ctx.globalAlpha = onionOpacity / 100;
+                // Show previous frames
+                for (let i = 1; i <= onionRange; i++) {
+                    const idx = currentFrameIndex - i;
+                    if (idx >= 0) {
+                        ctx.save();
+                        ctx.globalAlpha = (onionOpacity / 100) * (1 - i / (onionRange + 1));
+                        ctx.setTransform(1, 0, 0, 1, 0, 0);
+                        ctx.scale(zoom, zoom);
+                        ctx.translate(panX, panY);
+                        ctx.drawImage(frames[idx], 0, 0);
+                        ctx.restore();
+                    }
+                }
+                // Show next frames
+                for (let i = 1; i <= onionRange; i++) {
+                    const idx = currentFrameIndex + i;
+                    if (idx < frames.length) {
+                        ctx.save();
+                        ctx.globalAlpha = (onionOpacity / 100) * (1 - i / (onionRange + 1));
+                        ctx.setTransform(1, 0, 0, 1, 0, 0);
+                        ctx.scale(zoom, zoom);
+                        ctx.translate(panX, panY);
+                        ctx.drawImage(frames[idx], 0, 0);
+                        ctx.restore();
+                    }
+                }
+                ctx.restore();
+            }
+            // Update preview canvas transform to match
+            previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+            previewCtx.scale(zoom, zoom);
+            previewCtx.translate(panX, panY);
+        }
+
+        function refreshFramesStrip() {
+            framesStripDiv.innerHTML = "";
+            for (let i = 0; i < frames.length; i++) {
+                const frameCanvas = frames[i];
+                const thumbDiv = document.createElement('div');
+                thumbDiv.className = 'frame-thumb';
+                if (i === currentFrameIndex) thumbDiv.classList.add('selected');
+                thumbDiv.draggable = true;
+                thumbDiv.dataset.index = i;
+
+                const thumbCanvas = document.createElement('canvas');
+                thumbCanvas.width = 64;
+                thumbCanvas.height = 48;
+                const thumbCtx = thumbCanvas.getContext('2d');
+                thumbCtx.drawImage(frameCanvas, 0, 0, 64, 48);
+                const indexSpan = document.createElement('div');
+                indexSpan.className = 'frame-index';
+                indexSpan.innerText = `${i+1}  ${delays[i]||''}ms`;
+
+                thumbDiv.appendChild(thumbCanvas);
+                thumbDiv.appendChild(indexSpan);
+
+                // Click to select
+                thumbDiv.addEventListener('click', (function(idx) {
+                    return function(e) {
+                        if (e.target.closest('.frame-delay-input')) return;
+                        if (playing) stopAnimation();
+                        currentFrameIndex = idx;
+                        renderCurrentFrame();
+                        refreshFramesStrip();
+                        updateFrameCounter();
+                        updateDelayInput();
+                    };
+                })(i));
+
+                // Drag events
+                thumbDiv.addEventListener('dragstart', (e) => {
+                    dragSrcIndex = i;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', i);
+                    thumbDiv.style.opacity = '0.5';
+                });
+                thumbDiv.addEventListener('dragend', () => {
+                    thumbDiv.style.opacity = '1';
+                });
+                thumbDiv.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                });
+                thumbDiv.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const srcIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                    if (srcIdx === i) return;
+                    // Reorder frames, delays, undo/redo stacks
+                    const [movedFrame] = frames.splice(srcIdx, 1);
+                    const [movedDelay] = delays.splice(srcIdx, 1);
+                    const [movedUndo] = undoStacks.splice(srcIdx, 1);
+                    const [movedRedo] = redoStacks.splice(srcIdx, 1);
+                    frames.splice(i, 0, movedFrame);
+                    delays.splice(i, 0, movedDelay);
+                    undoStacks.splice(i, 0, movedUndo);
+                    redoStacks.splice(i, 0, movedRedo);
+                    // Update current index if needed
+                    if (currentFrameIndex === srcIdx) currentFrameIndex = i;
+                    else if (currentFrameIndex > srcIdx && currentFrameIndex <= i) currentFrameIndex--;
+                    else if (currentFrameIndex < srcIdx && currentFrameIndex >= i) currentFrameIndex++;
+                    refreshFramesStrip();
+                    renderCurrentFrame();
+                    updateFrameCounter();
+                    updateDelayInput();
+                    autoSave();
+                });
+
+                framesStripDiv.appendChild(thumbDiv);
+            }
+            updateUndoButtons();
+        }
+
+        function updateFrameCounter() {
+            frameCounterSpan.innerText = `Frame ${currentFrameIndex+1} / ${frames.length}`;
+        }
+
+        function updateDelayInput() {
+            if (frames.length && delays[currentFrameIndex] !== undefined) {
+                frameDelayInput.value = delays[currentFrameIndex] || 83;
+            }
+        }
+
+        // ============================================================
+        //  DRAWING & FILL
+        // ============================================================
+        function drawOnFrame(x0, y0, x1, y1) {
+            if (!frames.length) return;
+            const frameCanvas = frames[currentFrameIndex];
+            const c = frameCanvas.getContext('2d');
+            c.save();
+            c.lineCap = 'round';
+            c.lineJoin = 'round';
+            c.lineWidth = brushSize;
+            if (currentTool === "pencil") {
+                c.strokeStyle = currentColor;
+                c.beginPath();
+                c.moveTo(x0, y0);
+                c.lineTo(x1, y1);
+                c.stroke();
+            } else if (currentTool === "eraser") {
+                c.globalCompositeOperation = 'source-over';
+                c.strokeStyle = backgroundColor;
+                c.beginPath();
+                c.moveTo(x0, y0);
+                c.lineTo(x1, y1);
+                c.stroke();
+            }
+            c.restore();
+            renderCurrentFrame();
+        }
+
+        // Flood fill
+        function floodFill(canvas, startX, startY, fillColor) {
+            const c = canvas.getContext('2d');
+            const imageData = c.getImageData(0, 0, W, H);
+            const data = imageData.data;
+            const w = W,
+                h = H;
+            const idx = (startY * w + startX) * 4;
+            const targetR = data[idx],
+                targetG = data[idx + 1],
+                targetB = data[idx + 2];
+            // If target color equals fill color, skip
+            const fillR = parseInt(fillColor.slice(1, 3), 16);
+            const fillG = parseInt(fillColor.slice(3, 5), 16);
+            const fillB = parseInt(fillColor.slice(5, 7), 16);
+            if (targetR === fillR && targetG === fillG && targetB === fillB) return;
+
+            const visited = new Uint8Array(w * h);
+            const queue = [];
+            queue.push(startX, startY);
+            const maxPixels = w * h;
+            let count = 0;
+            while (queue.length > 0 && count < maxPixels) {
+                const x = queue.shift();
+                const y = queue.shift();
+                const pos = (y * w + x) * 4;
+                if (visited[y * w + x]) continue;
+                if (x < 0 || x >= w || y < 0 || y >= h) continue;
+                if (data[pos] !== targetR || data[pos + 1] !== targetG || data[pos + 2] !== targetB) continue;
+                visited[y * w + x] = 1;
+                data[pos] = fillR;
+                data[pos + 1] = fillG;
+                data[pos + 2] = fillB;
+                count++;
+                // push neighbors
+                queue.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+            }
+            c.putImageData(imageData, 0, 0);
+        }
+
+        // ============================================================
+        //  COORDINATE TRANSFORM (for zoom/pan)
+        // ============================================================
+        function getCanvasCoords(e, canvasElement = mainCanvas) {
+            const rect = canvasElement.getBoundingClientRect();
+            const scaleX = canvasElement.width / rect.width;
+            const scaleY = canvasElement.height / rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            // Get position relative to canvas element
+            let x = (clientX - rect.left) * scaleX;
+            let y = (clientY - rect.top) * scaleY;
+            // Apply inverse zoom/pan
+            x = (x / zoom) - panX;
+            y = (y / zoom) - panY;
+            x = Math.min(Math.max(0, x), W);
+            y = Math.min(Math.max(0, y), H);
+            return { x, y };
+        }
+
+        // ============================================================
+        //  MOUSE / TOUCH EVENTS
+        // ============================================================
+        function startDraw(e) {
+            if (playing) return;
+            if (currentTool === "fill") {
+                // Perform flood fill on click
+                const coords = getCanvasCoords(e);
+                pushUndo();
+                floodFill(frames[currentFrameIndex], Math.round(coords.x), Math.round(coords.y), currentColor);
+                renderCurrentFrame();
+                refreshFramesStrip();
+                autoSave();
+                return;
+            }
+            drawing = true;
+            const coords = getCanvasCoords(e);
+            lastX = coords.x;
+            lastY = coords.y;
+            // push undo before drawing
+            pushUndo();
+            drawOnFrame(lastX, lastY, lastX, lastY);
+        }
+
+        function draw(e) {
+            if (!drawing || playing) return;
+            const coords = getCanvasCoords(e);
+            drawOnFrame(lastX, lastY, coords.x, coords.y);
+            lastX = coords.x;
+            lastY = coords.y;
+            refreshFramesStrip();
+        }
+
+        function endDraw() {
+            drawing = false;
+            refreshFramesStrip();
+            autoSave();
+        }
+
+        // ============================================================
+        //  ZOOM & PAN
+        // ============================================================
+        function updateTransform() {
+            const wrapper = canvasWrapper;
+            const inner = innerWrap;
+            // We use CSS transform on innerWrap to scale and pan
+            // But we also need to adjust canvas sizes for events.
+            // We'll keep canvas size fixed, and use CSS transform.
+            // The canvas wrapper will clip overflow.
+            inner.style.transform = `scale(${zoom}) translate(${panX/zoom}px, ${panY/zoom}px)`;
+            // Also update preview canvas transform via CSS? Actually we handle in render.
+            renderCurrentFrame();
+            zoomLevelSpan.innerText = Math.round(zoom * 100) + '%';
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const newZoom = Math.min(5, Math.max(0.2, zoom + delta));
+            // zoom towards cursor
+            const rect = mainCanvas.getBoundingClientRect();
+            const scaleX = mainCanvas.width / rect.width;
+            const scaleY = mainCanvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            const worldX = (mouseX / zoom) - panX;
+            const worldY = (mouseY / zoom) - panY;
+            zoom = newZoom;
+            panX = (mouseX / zoom) - worldX;
+            panY = (mouseY / zoom) - worldY;
+            updateTransform();
+        }
+
+        function startPan(e) {
+            if (e.button === 1 || e.altKey) { // middle button or alt
+                isPanning = true;
+                const rect = canvasWrapper.getBoundingClientRect();
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                startPanX = panX;
+                startPanY = panY;
+                canvasWrapper.classList.add('dragging');
+                e.preventDefault();
+            }
+        }
+
+        function movePan(e) {
+            if (!isPanning) return;
+            const dx = (e.clientX - panStartX) / zoom;
+            const dy = (e.clientY - panStartY) / zoom;
+            panX = startPanX + dx;
+            panY = startPanY + dy;
+            updateTransform();
+            e.preventDefault();
+        }
+
+        function endPan(e) {
+            isPanning = false;
+            canvasWrapper.classList.remove('dragging');
+        }
+
+        function resetZoomPan() {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            updateTransform();
+        }
+
+        // ============================================================
+        //  FRAME OPERATIONS
+        // ============================================================
+        function clearCurrentFrame() {
+            if (!frames.length) return;
+            pushUndo();
+            const c = frames[currentFrameIndex].getContext('2d');
+            c.fillStyle = backgroundColor;
+            c.fillRect(0, 0, W, H);
+            renderCurrentFrame();
+            refreshFramesStrip();
+            autoSave();
+        }
+
+        function duplicateCurrentFrame() {
+            if (!frames.length) return;
+            const newCanvas = cloneCanvas(frames[currentFrameIndex]);
+            const newDelay = delays[currentFrameIndex] || 83;
+            frames.splice(currentFrameIndex + 1, 0, newCanvas);
+            delays.splice(currentFrameIndex + 1, 0, newDelay);
+            undoStacks.splice(currentFrameIndex + 1, 0, []);
+            redoStacks.splice(currentFrameIndex + 1, 0, []);
+            currentFrameIndex++;
+            if (playing) stopAnimation();
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
+            autoSave();
+        }
+
+        function addNewFrame() {
+            const newCanvas = createBlankCanvas();
+            const defaultDelay = parseInt(fpsSlider.value) ? 1000 / parseInt(fpsSlider.value) : 83;
+            frames.splice(currentFrameIndex + 1, 0, newCanvas);
+            delays.splice(currentFrameIndex + 1, 0, Math.round(defaultDelay));
+            undoStacks.splice(currentFrameIndex + 1, 0, []);
+            redoStacks.splice(currentFrameIndex + 1, 0, []);
+            currentFrameIndex++;
+            if (playing) stopAnimation();
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
+            autoSave();
+        }
+
+        function insertFrame() {
+            const newCanvas = createBlankCanvas();
+            const defaultDelay = parseInt(fpsSlider.value) ? 1000 / parseInt(fpsSlider.value) : 83;
+            frames.splice(currentFrameIndex, 0, newCanvas);
+            delays.splice(currentFrameIndex, 0, Math.round(defaultDelay));
+            undoStacks.splice(currentFrameIndex, 0, []);
+            redoStacks.splice(currentFrameIndex, 0, []);
+            // current frame stays same (new frame at current index)
+            if (playing) stopAnimation();
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
+            autoSave();
+        }
+
+        function deleteCurrentFrame() {
+            if (frames.length <= 1) { showToast("Cannot delete last frame", true); return; }
+            frames.splice(currentFrameIndex, 1);
+            delays.splice(currentFrameIndex, 1);
+            undoStacks.splice(currentFrameIndex, 1);
+            redoStacks.splice(currentFrameIndex, 1);
+            if (currentFrameIndex >= frames.length) currentFrameIndex = frames.length - 1;
+            if (playing) stopAnimation();
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
+            autoSave();
+        }
+
+        function clearAllFrames() {
+            if (frames.length === 0) return;
+            if (!confirm("Delete ALL frames? This cannot be undone.")) return;
+            frames = [];
+            delays = [];
+            undoStacks = [];
+            redoStacks = [];
+            // create one blank frame
+            const newCanvas = createBlankCanvas();
+            frames.push(newCanvas);
+            delays.push(83);
+            undoStacks.push([]);
+            redoStacks.push([]);
+            currentFrameIndex = 0;
+            if (playing) stopAnimation();
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
+            autoSave();
+            showToast("All frames cleared.");
+        }
+
+        function applyDelayToCurrent() {
+            const val = parseInt(frameDelayInput.value);
+            if (isNaN(val) || val < 1) return;
+            delays[currentFrameIndex] = val;
+            refreshFramesStrip();
+            autoSave();
+            showToast(`Delay set to ${val}ms`);
+        }
+
+        // ============================================================
+        //  PLAYBACK
+        // ============================================================
+        function startAnimation() {
+            if (playing) return;
+            if (frames.length < 2) { showToast("Need at least 2 frames", true); return; }
+            playing = true;
+            playBtn.textContent = '⏸️';
+            let frameIndex = currentFrameIndex;
+            let lastTime = performance.now();
+            let accumulated = 0;
+
+            function step(time) {
+                if (!playing) return;
+                const delta = time - lastTime;
+                lastTime = time;
+                accumulated += delta;
+                const currentDelay = delays[frameIndex] || 83;
+                while (accumulated >= currentDelay) {
+                    accumulated -= currentDelay;
+                    frameIndex = (frameIndex + 1) % frames.length;
+                    currentFrameIndex = frameIndex;
                     renderCurrentFrame();
                     refreshFramesStrip();
                     updateFrameCounter();
+                }
+                playInterval = requestAnimationFrame(step);
+            }
+            playInterval = requestAnimationFrame(step);
+        }
+
+        function stopAnimation() {
+            playing = false;
+            if (playInterval) {
+                cancelAnimationFrame(playInterval);
+                playInterval = null;
+            }
+            playBtn.textContent = '▶ Play';
+        }
+
+        // ============================================================
+        //  PROJECT SAVE / LOAD (with localStorage)
+        // ============================================================
+        function serializeProject() {
+            const framesData = frames.map(canvas => canvas.toDataURL("image/png"));
+            return {
+                version: "2.0",
+                width: W,
+                height: H,
+                bgColor: backgroundColor,
+                frames: framesData,
+                delays: delays,
+                currentIndex: currentFrameIndex,
+                zoom: zoom,
+                panX: panX,
+                panY: panY,
+                onionOpacity: onionOpacity,
+                onionRange: onionRange,
+                brushSize: brushSize,
+                currentColor: currentColor,
+                tool: currentTool
+            };
+        }
+
+        function deserializeProject(data) {
+            // data is parsed JSON
+            if (!data.frames || !Array.isArray(data.frames)) throw new Error("Invalid format");
+            backgroundColor = data.bgColor || "#ffffff";
+            bgColorSwatch.style.backgroundColor = backgroundColor;
+            bgColorPicker.value = backgroundColor;
+            const loadedFrames = [];
+            const loadedDelays = data.delays || [];
+            for (let i = 0; i < data.frames.length; i++) {
+                const img = new Image();
+                img.src = data.frames[i];
+                const canvas = document.createElement('canvas');
+                canvas.width = W;
+                canvas.height = H;
+                canvas.getContext('2d').drawImage(img, 0, 0, W, H);
+                loadedFrames.push(canvas);
+            }
+            frames = loadedFrames;
+            delays = loadedDelays.map(d => d || 83);
+            // ensure delays length matches
+            while (delays.length < frames.length) delays.push(83);
+            // reset undo/redo
+            undoStacks = frames.map(() => []);
+            redoStacks = frames.map(() => []);
+            currentFrameIndex = data.currentIndex || 0;
+            if (currentFrameIndex >= frames.length) currentFrameIndex = frames.length - 1;
+            // restore zoom/pan
+            if (data.zoom) zoom = data.zoom;
+            if (data.panX !== undefined) panX = data.panX;
+            if (data.panY !== undefined) panY = data.panY;
+            if (data.onionOpacity) onionOpacity = data.onionOpacity;
+            if (data.onionRange) onionRange = data.onionRange;
+            if (data.brushSize) brushSize = data.brushSize;
+            if (data.currentColor) currentColor = data.currentColor;
+            if (data.tool) currentTool = data.tool;
+            // update UI
+            colorSwatch.style.backgroundColor = currentColor;
+            colorPicker.value = currentColor;
+            brushSlider.value = brushSize;
+            brushValueSpan.innerText = brushSize + "px";
+            onionOpacitySlider.value = onionOpacity;
+            onionRangeInput.value = onionRange;
+            updateTransform();
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
+            // tool buttons
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            if (currentTool === 'pencil') pencilBtn.classList.add('active');
+            else if (currentTool === 'eraser') eraserBtn.classList.add('active');
+            else if (currentTool === 'fill') fillBtn.classList.add('active');
+            showToast(`Loaded ${frames.length} frames`);
+        }
+
+        function saveToLocalStorage() {
+            try {
+                const data = serializeProject();
+                localStorage.setItem('tvs_animator_project', JSON.stringify(data));
+            } catch (e) { /* ignore quota errors */ }
+        }
+
+        function autoSave() {
+            saveToLocalStorage();
+        }
+
+        function loadFromLocalStorage() {
+            const raw = localStorage.getItem('tvs_animator_project');
+            if (!raw) return false;
+            try {
+                const data = JSON.parse(raw);
+                deserializeProject(data);
+                return true;
+            } catch (e) {
+                console.warn("Failed to load localStorage project", e);
+                return false;
+            }
+        }
+
+        function downloadProject() {
+            const data = serializeProject();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "tvs_animation_v2.json";
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast("Project saved!");
+        }
+
+        async function loadProjectFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        deserializeProject(data);
+                        resolve();
+                    } catch (err) { reject(err); }
                 };
-            })(i));
-            framesStripDiv.appendChild(thumbDiv);
+                reader.onerror = () => reject(new Error("File read error"));
+                reader.readAsText(file);
+            });
         }
-    }
-    
-    function updateFrameCounter() {
-        frameCounterSpan.innerText = `Frame ${currentFrameIndex+1} / ${frames.length}`;
-    }
-    
-    function drawOnFrame(x0, y0, x1, y1) {
-        if (!frames.length) return;
-        const frameCanvas = frames[currentFrameIndex];
-        const frameCtx = frameCanvas.getContext('2d');
-        frameCtx.save();
-        frameCtx.lineCap = 'round';
-        frameCtx.lineJoin = 'round';
-        frameCtx.lineWidth = brushSize;
-        frameCtx.strokeStyle = currentTool === "pencil" ? currentColor : "#FFFFFF";
-        frameCtx.beginPath();
-        frameCtx.moveTo(x0, y0);
-        frameCtx.lineTo(x1, y1);
-        frameCtx.stroke();
-        frameCtx.restore();
-        renderCurrentFrame();
-    }
-    
-    function getCanvasCoords(e, canvasElement = mainCanvas) {
-        const rect = canvasElement.getBoundingClientRect();
-        const scaleX = canvasElement.width / rect.width;
-        const scaleY = canvasElement.height / rect.height;
-        let clientX, clientY;
-        if (e.touches) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
+
+        // ============================================================
+        //  EXPORT
+        // ============================================================
+        async function exportPNGSequence() {
+            if (frames.length === 0) return;
+            showToast("Preparing PNG sequence...");
+            const zip = new JSZip();
+            for (let i = 0; i < frames.length; i++) {
+                const dataURL = frames[i].toDataURL("image/png");
+                zip.file(`frame_${String(i+1).padStart(3,'0')}.png`, dataURL.split(',')[1], { base64: true });
+            }
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = "tvs_frames_sequence.zip";
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast("PNG sequence exported!");
         }
-        let canvasX = (clientX - rect.left) * scaleX;
-        let canvasY = (clientY - rect.top) * scaleY;
-        canvasX = Math.min(Math.max(0, canvasX), W);
-        canvasY = Math.min(Math.max(0, canvasY), H);
-        return { x: canvasX, y: canvasY };
-    }
-    
-    function startDraw(e) {
-        if (playing) return;
-        drawing = true;
-        const coords = getCanvasCoords(e);
-        lastX = coords.x;
-        lastY = coords.y;
-        drawOnFrame(lastX, lastY, lastX, lastY);
-    }
-    
-    function draw(e) {
-        if (!drawing || playing) return;
-        const coords = getCanvasCoords(e);
-        drawOnFrame(lastX, lastY, coords.x, coords.y);
-        lastX = coords.x;
-        lastY = coords.y;
-        refreshFramesStrip();
-    }
-    
-    function endDraw() {
-        drawing = false;
-        refreshFramesStrip();
-    }
-    
-    function updateBrushPreview(e) {
-        if (!previewCanvas) return;
-        const coords = getCanvasCoords(e, mainCanvas);
-        previewCtx.clearRect(0, 0, W, H);
-        previewCtx.beginPath();
-        previewCtx.arc(coords.x, coords.y, brushSize / 2, 0, Math.PI * 2);
-        previewCtx.strokeStyle = currentTool === "pencil" ? currentColor : "#ffffff";
-        previewCtx.lineWidth = 2;
-        previewCtx.stroke();
-        previewCtx.beginPath();
-        previewCtx.arc(coords.x, coords.y, 2, 0, Math.PI * 2);
-        previewCtx.fillStyle = "#000000aa";
-        previewCtx.fill();
-        previewCtx.strokeStyle = "white";
-        previewCtx.lineWidth = 1;
-        previewCtx.stroke();
-    }
-    
-    function clearBrushPreview() {
-        previewCtx.clearRect(0, 0, W, H);
-    }
-    
-    function initBrushPreviewEvents() {
-        mainCanvas.addEventListener('mousemove', updateBrushPreview);
-        mainCanvas.addEventListener('mouseleave', clearBrushPreview);
-        mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); updateBrushPreview(e); });
-        mainCanvas.addEventListener('touchend', clearBrushPreview);
-    }
-    
-    function clearCurrentFrame() {
-        if (!frames.length) return;
-        const frameCanvas = frames[currentFrameIndex];
-        const frameCtx = frameCanvas.getContext('2d');
-        frameCtx.fillStyle = "#FFFFFF";
-        frameCtx.fillRect(0, 0, W, H);
-        renderCurrentFrame();
-        refreshFramesStrip();
-    }
-    
-    function duplicateCurrentFrame() {
-        if (!frames.length) return;
-        const currentCanvas = frames[currentFrameIndex];
-        const newCanvas = document.createElement('canvas');
-        newCanvas.width = W;
-        newCanvas.height = H;
-        const newCtx = newCanvas.getContext('2d');
-        newCtx.drawImage(currentCanvas, 0, 0);
-        frames.splice(currentFrameIndex + 1, 0, newCanvas);
-        currentFrameIndex++;
-        if (playing) stopAnimation();
-        renderCurrentFrame();
-        refreshFramesStrip();
-        updateFrameCounter();
-    }
-    
-    function addNewFrame() {
-        const newCanvas = createBlankCanvas();
-        frames.splice(currentFrameIndex + 1, 0, newCanvas);
-        currentFrameIndex++;
-        if (playing) stopAnimation();
-        renderCurrentFrame();
-        refreshFramesStrip();
-        updateFrameCounter();
-    }
-    
-    function deleteCurrentFrame() {
-        if (frames.length <= 1) { alert("Cannot delete last frame"); return; }
-        frames.splice(currentFrameIndex, 1);
-        if (currentFrameIndex >= frames.length) currentFrameIndex = frames.length - 1;
-        if (playing) stopAnimation();
-        renderCurrentFrame();
-        refreshFramesStrip();
-        updateFrameCounter();
-    }
-    
-    function nextFrame() {
-        if (playing) stopAnimation();
-        if (!frames.length) return;
-        currentFrameIndex = (currentFrameIndex + 1) % frames.length;
-        renderCurrentFrame();
-        refreshFramesStrip();
-        updateFrameCounter();
-    }
-    
-    function prevFrame() {
-        if (playing) stopAnimation();
-        if (!frames.length) return;
-        currentFrameIndex = (currentFrameIndex - 1 + frames.length) % frames.length;
-        renderCurrentFrame();
-        refreshFramesStrip();
-        updateFrameCounter();
-    }
-    
-    function startAnimation() {
-        if (playing) return;
-        playing = true;
-        const fps = parseInt(fpsSlider.value);
-        playInterval = setInterval(() => {
-            if (!playing) return;
+
+        function exportGIF() {
+            if (frames.length === 0) {
+                showToast("No frames to export", true);
+                return;
+            }
+            showToast("Rendering GIF... please wait", false);
+
+            const workerScriptURL = "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js";
+            fetch(workerScriptURL)
+                .then(response => response.text())
+                .then(workerCode => {
+                    const blob = new Blob([workerCode], { type: 'application/javascript' });
+                    const blobURL = URL.createObjectURL(blob);
+
+                    const gif = new GIF({
+                        workers: 2,
+                        quality: 10,
+                        width: W,
+                        height: H,
+                        workerScript: blobURL
+                    });
+
+                    for (let i = 0; i < frames.length; i++) {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = W;
+                        tempCanvas.height = H;
+                        tempCanvas.getContext('2d').drawImage(frames[i], 0, 0);
+                        const delay = delays[i] || 83;
+                        gif.addFrame(tempCanvas, { delay: delay, copy: true });
+                    }
+
+                    gif.on('finished', function(blob) {
+                        URL.revokeObjectURL(blobURL);
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = "tvs_animation.gif";
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                        showToast("GIF exported successfully!");
+                    });
+
+                    gif.on('error', function(e) {
+                        URL.revokeObjectURL(blobURL);
+                        console.error(e);
+                        showToast("GIF error: " + (e.message || "unknown"), true);
+                    });
+
+                    gif.render();
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast("Failed to load GIF worker. Check internet.", true);
+                });
+        }
+
+        // ============================================================
+        //  KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', (e) => {
+            // Prevent default for shortcuts to avoid page scroll etc.
+            const ctrl = e.ctrlKey || e.metaKey;
+            if (ctrl && e.key === 'z') { e.preventDefault();
+                undo(); return; }
+            if (ctrl && e.key === 'y') { e.preventDefault();
+                redo(); return; }
+            if (e.key === 'b' || e.key === 'B') { pencilBtn.click();
+                e.preventDefault(); return; }
+            if (e.key === 'e' || e.key === 'E') { eraserBtn.click();
+                e.preventDefault(); return; }
+            if (e.key === 'g' || e.key === 'G') { fillBtn.click();
+                e.preventDefault(); return; }
+            if (e.key === '[') { brushSize = Math.max(1, brushSize - 1);
+                brushSlider.value = brushSize;
+                brushValueSpan.innerText = brushSize + "px";
+                e.preventDefault(); return; }
+            if (e.key === ']') { brushSize = Math.min(40, brushSize + 1);
+                brushSlider.value = brushSize;
+                brushValueSpan.innerText = brushSize + "px";
+                e.preventDefault(); return; }
+            if (e.key === 'ArrowLeft') { prevFrameBtn.click();
+                e.preventDefault(); return; }
+            if (e.key === 'ArrowRight') { nextFrameBtn.click();
+                e.preventDefault(); return; }
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                if (playing) stopBtn.click();
+                else playBtn.click();
+                return;
+            }
+            if (ctrl && e.key === 's') { e.preventDefault();
+                saveProjBtn.click(); return; }
+        });
+
+        // ============================================================
+        //  EVENT LISTENERS & UI INIT
+        // ============================================================
+        function init() {
+            // Try loading from localStorage first
+            const loaded = loadFromLocalStorage();
+            if (!loaded) {
+                // default project
+                frames = [];
+                delays = [];
+                undoStacks = [];
+                redoStacks = [];
+                const newCanvas = createBlankCanvas();
+                frames.push(newCanvas);
+                delays.push(83);
+                undoStacks.push([]);
+                redoStacks.push([]);
+                currentFrameIndex = 0;
+                renderCurrentFrame();
+                refreshFramesStrip();
+                updateFrameCounter();
+                updateDelayInput();
+            }
+
+            // UI events
+            colorSwatch.addEventListener('click', () => colorPicker.click());
+            colorPicker.addEventListener('input', (e) => {
+                currentColor = e.target.value;
+                colorSwatch.style.backgroundColor = currentColor;
+            });
+            bgColorSwatch.addEventListener('click', () => bgColorPicker.click());
+            bgColorPicker.addEventListener('input', (e) => {
+                const newColor = e.target.value;
+                const oldColor = backgroundColor;
+                if (newColor === oldColor) return;
+                backgroundColor = newColor;
+                bgColorSwatch.style.backgroundColor = newColor;
+                // Apply to all frames (using replace logic)
+                applyBackgroundToAllFrames(oldColor, newColor);
+                autoSave();
+            });
+
+            pencilBtn.addEventListener('click', () => {
+                currentTool = "pencil";
+                pencilBtn.classList.add('active');
+                eraserBtn.classList.remove('active');
+                fillBtn.classList.remove('active');
+            });
+            eraserBtn.addEventListener('click', () => {
+                currentTool = "eraser";
+                eraserBtn.classList.add('active');
+                pencilBtn.classList.remove('active');
+                fillBtn.classList.remove('active');
+            });
+            fillBtn.addEventListener('click', () => {
+                currentTool = "fill";
+                fillBtn.classList.add('active');
+                pencilBtn.classList.remove('active');
+                eraserBtn.classList.remove('active');
+            });
+
+            brushSlider.addEventListener('input', (e) => {
+                brushSize = parseInt(e.target.value);
+                brushValueSpan.innerText = brushSize + "px";
+            });
+
+            onionToggle.addEventListener('change', (e) => { onionEnabled = e.target.checked;
+                renderCurrentFrame(); });
+            onionOpacitySlider.addEventListener('input', (e) => {
+                onionOpacity = parseInt(e.target.value);
+                renderCurrentFrame();
+                autoSave();
+            });
+            onionRangeInput.addEventListener('change', (e) => {
+                onionRange = Math.max(1, Math.min(3, parseInt(e.target.value) || 1));
+                renderCurrentFrame();
+                autoSave();
+            });
+
+            clearFrameBtn.addEventListener('click', clearCurrentFrame);
+            duplicateFrameBtn.addEventListener('click', duplicateCurrentFrame);
+            prevFrameBtn.addEventListener('click', () => { if (playing) stopAnimation();
+                prevFrame(); });
+            nextFrameBtn.addEventListener('click', () => { if (playing) stopAnimation();
+                nextFrame(); });
+            addFrameBtn.addEventListener('click', addNewFrame);
+            delFrameBtn.addEventListener('click', deleteCurrentFrame);
+            insertFrameBtn.addEventListener('click', insertFrame);
+            playBtn.addEventListener('click', startAnimation);
+            stopBtn.addEventListener('click', stopAnimation);
+            fpsSlider.addEventListener('input', (e) => {
+                fpsValueSpan.innerText = e.target.value;
+                if (playing) { stopAnimation();
+                    startAnimation(); }
+            });
+            saveProjBtn.addEventListener('click', downloadProject);
+            loadProjInput.addEventListener('change', async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    try {
+                        await loadProjectFromFile(e.target.files[0]);
+                        autoSave();
+                    } catch (err) { alert("Load error: " + err.message); }
+                    loadProjInput.value = '';
+                }
+            });
+            exportPngSeqBtn.addEventListener('click', exportPNGSequence);
+            exportGifBtn.addEventListener('click', exportGIF);
+            undoBtn.addEventListener('click', undo);
+            redoBtn.addEventListener('click', redo);
+            clearAllBtn.addEventListener('click', clearAllFrames);
+            applyDelayBtn.addEventListener('click', applyDelayToCurrent);
+            frameDelayInput.addEventListener('change', applyDelayToCurrent);
+
+            // Zoom/Pan
+            zoomInBtn.addEventListener('click', () => { zoom = Math.min(5, zoom + 0.2);
+                updateTransform(); });
+            zoomOutBtn.addEventListener('click', () => { zoom = Math.max(0.2, zoom - 0.2);
+                updateTransform(); });
+            zoomResetBtn.addEventListener('click', resetZoomPan);
+
+            canvasWrapper.addEventListener('wheel', handleWheel, { passive: false });
+            canvasWrapper.addEventListener('mousedown', startPan);
+            document.addEventListener('mousemove', movePan);
+            document.addEventListener('mouseup', endPan);
+            canvasWrapper.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Drawing events on mainCanvas
+            mainCanvas.addEventListener('mousedown', startDraw);
+            mainCanvas.addEventListener('mousemove', draw);
+            mainCanvas.addEventListener('mouseup', endDraw);
+            mainCanvas.addEventListener('mouseleave', endDraw);
+            mainCanvas.addEventListener('touchstart', (e) => { e.preventDefault();
+                startDraw(e); });
+            mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault();
+                draw(e); });
+            mainCanvas.addEventListener('touchend', endDraw);
+
+            // Brush preview
+            mainCanvas.addEventListener('mousemove', updateBrushPreview);
+            mainCanvas.addEventListener('mouseleave', clearBrushPreview);
+            mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault();
+                updateBrushPreview(e); });
+            mainCanvas.addEventListener('touchend', clearBrushPreview);
+
+            // apply bg button
+            applyBgBtn.addEventListener('click', () => {
+                // apply current backgroundColor to all frames via flood fill (replace most common color)
+                for (let i = 0; i < frames.length; i++) {
+                    const canvas = frames[i];
+                    const c = canvas.getContext('2d');
+                    const imageData = c.getImageData(0, 0, W, H);
+                    const data = imageData.data;
+                    // Find most common color (sample)
+                    const freq = {};
+                    const step = 6;
+                    for (let y = 0; y < H; y += step) {
+                        for (let x = 0; x < W; x += step) {
+                            const idx = (y * W + x) * 4;
+                            const r = data[idx],
+                                g = data[idx + 1],
+                                b = data[idx + 2];
+                            const key = `${r},${g},${b}`;
+                            freq[key] = (freq[key] || 0) + 1;
+                        }
+                    }
+                    let maxCount = 0;
+                    let mostCommon = "255,255,255";
+                    for (const [key, count] of Object.entries(freq)) {
+                        if (count > maxCount) { maxCount = count;
+                            mostCommon = key; }
+                    }
+                    const [oldR, oldG, oldB] = mostCommon.split(',').map(Number);
+                    const oldColorHex =
+                        `#${oldR.toString(16).padStart(2,'0')}${oldG.toString(16).padStart(2,'0')}${oldB.toString(16).padStart(2,'0')}`;
+                    // Replace color with tolerance
+                    const fillR = parseInt(backgroundColor.slice(1, 3), 16);
+                    const fillG = parseInt(backgroundColor.slice(3, 5), 16);
+                    const fillB = parseInt(backgroundColor.slice(5, 7), 16);
+                    const tolerance = 25;
+                    for (let j = 0; j < data.length; j += 4) {
+                        const r = data[j],
+                            g = data[j + 1],
+                            b = data[j + 2];
+                        const dist = Math.sqrt((r - oldR) ** 2 + (g - oldG) ** 2 + (b - oldB) ** 2);
+                        if (dist <= tolerance) {
+                            data[j] = fillR;
+                            data[j + 1] = fillG;
+                            data[j + 2] = fillB;
+                        }
+                    }
+                    c.putImageData(imageData, 0, 0);
+                }
+                renderCurrentFrame();
+                refreshFramesStrip();
+                autoSave();
+                showToast("Background applied to all frames");
+            });
+
+            // initial setup
+            updateTransform();
+            updateDelayInput();
+            showToast("Welcome to TVS Animator v2.0");
+        }
+
+        // Additional helper for background change (replace old with new)
+        function applyBackgroundToAllFrames(oldColor, newColor) {
+            for (let i = 0; i < frames.length; i++) {
+                const canvas = frames[i];
+                const c = canvas.getContext('2d');
+                const imageData = c.getImageData(0, 0, W, H);
+                const data = imageData.data;
+                const oldR = parseInt(oldColor.slice(1, 3), 16);
+                const oldG = parseInt(oldColor.slice(3, 5), 16);
+                const oldB = parseInt(oldColor.slice(5, 7), 16);
+                const newR = parseInt(newColor.slice(1, 3), 16);
+                const newG = parseInt(newColor.slice(3, 5), 16);
+                const newB = parseInt(newColor.slice(5, 7), 16);
+                const tolerance = 25;
+                for (let j = 0; j < data.length; j += 4) {
+                    const r = data[j],
+                        g = data[j + 1],
+                        b = data[j + 2];
+                    const dist = Math.sqrt((r - oldR) ** 2 + (g - oldG) ** 2 + (b - oldB) ** 2);
+                    if (dist <= tolerance) {
+                        data[j] = newR;
+                        data[j + 1] = newG;
+                        data[j + 2] = newB;
+                    }
+                }
+                c.putImageData(imageData, 0, 0);
+            }
+            renderCurrentFrame();
+            refreshFramesStrip();
+        }
+
+        // Brush preview
+        function updateBrushPreview(e) {
+            if (!previewCanvas) return;
+            const coords = getCanvasCoords(e, mainCanvas);
+            previewCtx.clearRect(0, 0, W, H);
+            previewCtx.save();
+            previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+            previewCtx.scale(zoom, zoom);
+            previewCtx.translate(panX, panY);
+            previewCtx.beginPath();
+            previewCtx.arc(coords.x, coords.y, brushSize / 2, 0, Math.PI * 2);
+            previewCtx.strokeStyle = currentTool === "pencil" ? currentColor : backgroundColor;
+            previewCtx.lineWidth = 2;
+            previewCtx.stroke();
+            previewCtx.beginPath();
+            previewCtx.arc(coords.x, coords.y, 2, 0, Math.PI * 2);
+            previewCtx.fillStyle = "#000000aa";
+            previewCtx.fill();
+            previewCtx.strokeStyle = "white";
+            previewCtx.lineWidth = 1;
+            previewCtx.stroke();
+            previewCtx.restore();
+        }
+
+        function clearBrushPreview() {
+            previewCtx.clearRect(0, 0, W, H);
+        }
+
+        // Navigate functions
+        function nextFrame() {
+            if (!frames.length) return;
             currentFrameIndex = (currentFrameIndex + 1) % frames.length;
             renderCurrentFrame();
             refreshFramesStrip();
             updateFrameCounter();
-        }, 1000 / fps);
-    }
-    
-    function stopAnimation() {
-        if (playInterval) { clearInterval(playInterval); playInterval = null; }
-        playing = false;
-    }
-    
-    function saveProject() {
-        const framesData = frames.map(canvas => canvas.toDataURL("image/png"));
-        const project = { version: "1.0", width: W, height: H, frames: framesData };
-        const blob = new Blob([JSON.stringify(project)], {type: "application/json"});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = "tvs_animation.json";
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
-    
-    async function loadProjectFromFile(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const project = JSON.parse(e.target.result);
-                    if (!project.frames || !Array.isArray(project.frames)) throw new Error("Invalid format");
-                    const loadedFrames = [];
-                    for (let dataURL of project.frames) {
-                        const img = new Image();
-                        img.src = dataURL;
-                        await new Promise((res, rej) => {
-                            img.onload = () => {
-                                const canvas = document.createElement('canvas');
-                                canvas.width = W; canvas.height = H;
-                                canvas.getContext('2d').drawImage(img, 0, 0, W, H);
-                                loadedFrames.push(canvas);
-                                res();
-                            };
-                            img.onerror = () => rej(new Error("Image load error"));
-                        });
-                    }
-                    if (loadedFrames.length === 0) loadedFrames.push(createBlankCanvas());
-                    frames = loadedFrames;
-                    currentFrameIndex = 0;
-                    if (playing) stopAnimation();
-                    renderCurrentFrame();
-                    refreshFramesStrip();
-                    updateFrameCounter();
-                    resolve();
-                } catch (err) { reject(err); }
-            };
-            reader.onerror = () => reject(new Error("File read error"));
-            reader.readAsText(file);
-        });
-    }
-    
-    async function exportPNGSequence() {
-        if (frames.length === 0) return;
-        const zip = new JSZip();
-        for (let i = 0; i < frames.length; i++) {
-            const dataURL = frames[i].toDataURL("image/png");
-            zip.file(`frame_${String(i+1).padStart(3,'0')}.png`, dataURL.split(',')[1], {base64: true});
+            updateDelayInput();
         }
-        const content = await zip.generateAsync({type:"blob"});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(content);
-        link.download = "tvs_frames_sequence.zip";
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
-    
-    // FIXED GIF EXPORT: embed worker as Blob to avoid CDN issues
-    function exportGIF() {
-        if (frames.length === 0) {
-            showToast("No frames to export", true);
-            return;
+
+        function prevFrame() {
+            if (!frames.length) return;
+            currentFrameIndex = (currentFrameIndex - 1 + frames.length) % frames.length;
+            renderCurrentFrame();
+            refreshFramesStrip();
+            updateFrameCounter();
+            updateDelayInput();
         }
-        showToast("Rendering GIF... please wait", false);
-        
-        // Fetch the worker script from CDN and create a Blob URL
-        const workerScriptURL = "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js";
-        fetch(workerScriptURL)
-            .then(response => response.text())
-            .then(workerCode => {
-                const blob = new Blob([workerCode], { type: 'application/javascript' });
-                const blobURL = URL.createObjectURL(blob);
-                
-                const gif = new GIF({
-                    workers: 2,
-                    quality: 10,
-                    width: W,
-                    height: H,
-                    workerScript: blobURL
-                });
-                
-                const fps = parseInt(fpsSlider.value);
-                const delayMs = 1000 / fps;
-                
-                for (let i = 0; i < frames.length; i++) {
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = W;
-                    tempCanvas.height = H;
-                    tempCanvas.getContext('2d').drawImage(frames[i], 0, 0);
-                    gif.addFrame(tempCanvas, { delay: delayMs, copy: true });
-                }
-                
-                gif.on('finished', function(blob) {
-                    URL.revokeObjectURL(blobURL);
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = "tvs_animation.gif";
-                    link.click();
-                    URL.revokeObjectURL(link.href);
-                    showToast("GIF exported successfully!");
-                });
-                
-                gif.on('error', function(e) {
-                    URL.revokeObjectURL(blobURL);
-                    console.error(e);
-                    showToast("GIF error: " + (e.message || "unknown"), true);
-                });
-                
-                gif.render();
-            })
-            .catch(err => {
-                console.error(err);
-                showToast("Failed to load GIF worker. Check internet.", true);
-            });
-    }
-    
-    function initEventListeners() {
-        mainCanvas.addEventListener('mousedown', startDraw);
-        mainCanvas.addEventListener('mousemove', draw);
-        mainCanvas.addEventListener('mouseup', endDraw);
-        mainCanvas.addEventListener('mouseleave', endDraw);
-        mainCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
-        mainCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
-        mainCanvas.addEventListener('touchend', endDraw);
-        
-        colorSwatch.addEventListener('click', () => colorPicker.click());
-        colorPicker.addEventListener('input', (e) => {
-            currentColor = e.target.value;
-            colorSwatch.style.backgroundColor = currentColor;
-        });
-        
-        pencilBtn.addEventListener('click', () => {
-            currentTool = "pencil";
-            pencilBtn.classList.add('active');
-            eraserBtn.classList.remove('active');
-        });
-        eraserBtn.addEventListener('click', () => {
-            currentTool = "eraser";
-            eraserBtn.classList.add('active');
-            pencilBtn.classList.remove('active');
-        });
-        brushSlider.addEventListener('input', (e) => {
-            brushSize = parseInt(e.target.value);
-            brushValueSpan.innerText = brushSize + "px";
-        });
-        onionToggle.addEventListener('change', (e) => { onionEnabled = e.target.checked; renderCurrentFrame(); });
-        clearFrameBtn.addEventListener('click', clearCurrentFrame);
-        duplicateFrameBtn.addEventListener('click', duplicateCurrentFrame);
-        prevFrameBtn.addEventListener('click', prevFrame);
-        nextFrameBtn.addEventListener('click', nextFrame);
-        addFrameBtn.addEventListener('click', addNewFrame);
-        delFrameBtn.addEventListener('click', deleteCurrentFrame);
-        playBtn.addEventListener('click', startAnimation);
-        stopBtn.addEventListener('click', stopAnimation);
-        saveProjBtn.addEventListener('click', saveProject);
-        loadProjInput.addEventListener('change', async (e) => {
-            if (e.target.files && e.target.files[0]) {
-                try {
-                    await loadProjectFromFile(e.target.files[0]);
-                } catch (err) { alert("Load error: " + err.message); }
-                loadProjInput.value = '';
-            }
-        });
-        exportPngSeqBtn.addEventListener('click', exportPNGSequence);
-        exportGifBtn.addEventListener('click', exportGIF);
-        fpsSlider.addEventListener('input', (e) => {
-            fpsValueSpan.innerText = e.target.value;
-            if (playing) { stopAnimation(); startAnimation(); }
-        });
-    }
-    
-    function setup() {
-        initProject();
-        initEventListeners();
-        initBrushPreviewEvents();
-        colorSwatch.style.backgroundColor = currentColor;
-        brushValueSpan.innerText = brushSize + "px";
-        renderCurrentFrame();
-    }
-    
-    setup();
-</script>
+
+        // Start the app
+        init();
+    </script>
 </body>
 </html>
