@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>TVS Animator v2.0</title>
+    <title>TVS Animator v2.0.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <style>
@@ -291,7 +291,7 @@
 </head>
 <body>
     <div class="app-container">
-        <h1>🎬 TVS Animator <small>v2.0 · Pro Studio</small></h1>
+        <h1>🎬 TVS Animator <small>v2.0.1 · Pro Studio</small></h1>
 
         <div class="toolbar">
             <div class="tool-group">
@@ -377,7 +377,7 @@
         </div>
         <div class="flex-row" style="justify-content:space-between;margin-top:12px;">
             <span class="status">💡 Shortcuts: B=Pen E=Eraser G=Fill [ ]=size ← →=frame Space=play Ctrl+Z/Y undo/redo · Alt/Middle-drag = pan · Wheel = zoom</span>
-            <span class="status">✨ TVS Studio v2.0</span>
+            <span class="status">✨ TVS Studio v2.0.1</span>
         </div>
     </div>
     <div id="toastMsg" class="toast">Ready</div>
@@ -1087,7 +1087,7 @@
         function serializeProject() {
             const framesData = frames.map(canvas => canvas.toDataURL("image/png"));
             return {
-                version: "2.0",
+                version: "2.0.1",
                 width: W,
                 height: H,
                 bgColor: backgroundColor,
@@ -1188,7 +1188,7 @@
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = "tvs_animation_v2.json";
+            link.download = "tvs_animation_v2.0.1.json";
             link.click();
             URL.revokeObjectURL(link.href);
             showToast("Project saved!");
@@ -1519,7 +1519,7 @@
             // initial setup
             updateTransform();
             updateDelayInput();
-            showToast("Welcome to TVS Animator v2.0");
+            showToast("Welcome to TVS Animator v2.0.1");
         }
 
         // Additional helper for background change (replace old with new)
